@@ -116,7 +116,11 @@ export default function Cadastro() {
             </>
           )}
 
-          <TouchableOpacity style={styles.button}>
+          {/* Botão Cadastrar */}
+          <TouchableOpacity 
+            style={styles.button}
+            onPress={() => router.push('/verificar-email')}
+          >
             <Text style={styles.buttonText}>Cadastrar</Text>
           </TouchableOpacity>
 

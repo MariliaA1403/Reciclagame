@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 export default function Login() {
@@ -10,19 +9,9 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        Alert.alert('Sucesso', data.message);
-      } else {
-        Alert.alert('Erro', data.message);
-      }
+      // Aqui você pode implementar autenticação real
+      // Por enquanto, vamos só redirecionar para a Home
+      router.push('/home');
     } catch (err) {
       Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
     }
@@ -108,7 +97,6 @@ export default function Login() {
         >
           <Text style={styles.registerButtonText}>Cadastrar</Text>
         </TouchableOpacity>
-
       </View>
     </ScrollView>
   );
