@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+
 import {
   View,
   Text,
@@ -16,11 +18,26 @@ const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 
 export default function HomeScreen() {
   const [fontsLoaded] = useFonts({ JockeyOne_400Regular });
-  const [user] = useState({
+  const [user, setUser] = useState({
     name: "Usuário",
     points: 0,
     levelProgress: 0,
+    photo: null, // inicialmente sem foto
   });
+
+  // Função para escolher imagem
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setUser({ ...user, photo: result.assets[0].uri });
+    }
+  };
 
   if (!fontsLoaded) return null;
 
@@ -33,11 +50,20 @@ export default function HomeScreen() {
         {/* HEADER */}
         <View style={styles.topHeader}>
           <View style={styles.profileWrapper}>
-            <Image
-              source={require("../assets/images/foto_perfil.jpeg")}
-              style={styles.profileImage}
-            />
+            <TouchableOpacity style={styles.profileEditButton} onPress={pickImage}>
+              {user.photo ? (
+                <Image source={{ uri: user.photo }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.defaultAvatar}>
+                  <MaterialCommunityIcons name="account" size={28} color="#fff" />
+                </View>
+              )}
+              <View style={styles.editIconWrapper}>
+                <MaterialCommunityIcons name="pencil" size={16} color="#fff" />
+              </View>
+            </TouchableOpacity>
           </View>
+
           <MaterialCommunityIcons name="menu" size={26} color="#000" style={styles.menuIcon} />
           <Image source={require("../assets/images/logo.png")} style={styles.logo} />
         </View>
@@ -146,10 +172,9 @@ const styles = StyleSheet.create({
   topHeader: {
     width: "100%",
     flexDirection: "row",
-    justifyContent: "center", 
+    justifyContent: "center",
     alignItems: "center",
     position: "relative",
-    
   },
 
   profileWrapper: {
@@ -162,7 +187,36 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
   },
+
+  profileEditButton: {
+    width: "100%",
+    height: "100%",
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   profileImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  defaultAvatar: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#278148",
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editIconWrapper: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    backgroundColor: "#6B6969",
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#fff",
+  },
 
   logo: { width: 80, height: 80, resizeMode: "contain" },
 
@@ -180,10 +234,10 @@ const styles = StyleSheet.create({
   homeText: { fontSize: 20, fontWeight: "900", color: "#000" },
   subText: { fontSize: 12, color: "#000" },
   pointsRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  pointsNumber: { fontSize: 20, color: "#278148", fontWeight: "bold", marginLeft: 50},
+  pointsNumber: { fontSize: 20, color: "#278148", fontWeight: "bold", marginLeft: 50 },
   pointsLabel: { fontSize: 12, marginLeft: 4 },
   progressBar: { width: "80%", height: 6, backgroundColor: "#ddd", borderRadius: 10, marginTop: 8, marginLeft: 50 },
-  progress: { height: "100%", backgroundColor: "#CBF9E0", borderRadius: 10},
+  progress: { height: "100%", backgroundColor: "#CBF9E0", borderRadius: 10 },
 
   // Botões desafios
   desafioButtons: {
