@@ -2,18 +2,39 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 
+const API_URL = "https://ubiquitous-lamp-69r6gv49x4qqc555p-3000.app.github.dev";
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Erro", "Preencha email e senha.");
+      return;
+    }
+
     try {
-      // Aqui você pode implementar autenticação real
-      // Por enquanto, vamos só redirecionar para a Home
-      router.push('/home');
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Enviando dados do usuário para a Home
+        router.push({
+          pathname: '/home',
+          params: { user: JSON.stringify(data.user) }
+        });
+      } else {
+        Alert.alert("Erro", data.message);
+      }
     } catch (err) {
-      Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+      Alert.alert("Erro", "Não foi possível conectar ao servidor.");
     }
   };
 
@@ -23,7 +44,7 @@ export default function Login() {
       return;
     }
     try {
-      const response = await fetch('http://localhost:3000/api/forgot-password', {
+      const response = await fetch(`${API_URL}/api/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -76,7 +97,6 @@ export default function Login() {
           <Text style={styles.forgotText}>Esqueceu a senha?</Text>
         </TouchableOpacity>
 
-        {/* Login social */}
         <Text style={styles.socialText}>ou faça login usando</Text>
         <View style={styles.socialContainer}>
           <TouchableOpacity>
@@ -106,16 +126,16 @@ const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
   container: { width: '100%', alignItems: 'center', padding: 20, backgroundColor: '#FCFDFD' },
   logo: { width: 200, height: 200, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 8 },
-  welcomeText: { fontSize: 24, fontWeight: 'bold', color: '#278148', textShadowColor: 'rgba(0,0,0,0.25)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 3, marginBottom: 5, textAlign: 'center' },
+  welcomeText: { fontSize: 24, fontWeight: 'bold', color: '#278148', textAlign: 'center', marginBottom: 5 },
   subtitleText: { fontSize: 16, fontStyle: 'italic', color: '#000', marginBottom: 25, textAlign: 'center' },
-  label: { fontSize: 16, fontStyle: 'italic', color: '#000', marginBottom: 8, textAlign: 'left', alignSelf: 'flex-start', textShadowColor: 'rgba(0,0,0,0.15)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
+  label: { fontSize: 16, fontStyle: 'italic', color: '#000', marginBottom: 8, alignSelf: 'flex-start' },
   input: { width: '100%', borderWidth: 1, borderColor: '#ccc', padding: 12, marginBottom: 15, borderRadius: 10, backgroundColor: '#DDDDDD' },
   button: { width: '100%', backgroundColor: '#28a745', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 15 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   forgotText: { color: '#007bff', textAlign: 'center', fontSize: 14, marginBottom: 15 },
   socialText: { fontSize: 14, fontStyle: 'italic', color: '#000', marginBottom: 10 },
   socialContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '60%', marginBottom: 15 },
-  socialIcon: { width: 50, height: 50, borderRadius: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 6 },
+  socialIcon: { width: 50, height: 50, borderRadius: 25 },
   registerText: { fontSize: 14, fontStyle: 'italic', color: '#000', marginTop: 20, marginBottom: 10, textAlign: 'center' },
   registerButton: { width: '100%', backgroundColor: '#28a745', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
   registerButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
