@@ -5,7 +5,7 @@ import {
 import { useRouter } from 'expo-router';
 
 // URL DO BACKEND (IMPORTANTE: SEM "/" NO FINAL)
-const API_URL = "https://api-reciclagame.vercel.app/api";
+const API_URL = "http://localhost:3000";
 
 export default function Cadastro() {
   const router = useRouter();

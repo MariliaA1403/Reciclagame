@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 
-const API_URL = "https://api-reciclagame.vercel.app";
+const API_URL = "http://localhost:3000";
 
 export default function Login() {
   const router = useRouter();
