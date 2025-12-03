@@ -14,7 +14,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 
 export default function NoticiasScreen() {
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   menuOverlay: {
     position: "absolute",
     top: 0,
-    left: 0, // <<< MENU DO LADO ESQUERDO
+    left: 0, 
     right: 0,
     bottom: 0,
     flexDirection: "row",
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 20,
     position: "absolute",
-    left: 0, // <<< ESSA LINHA COLOCA O MENU NO LADO ESQUERDO
+    left: 0, 
     top: 0,
     bottom: 0,
   },
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginVertical: 20,
     fontWeight: "bold",
-    color: "#2E7D32", // verde igual os outros menus
+    color: "#2E7D32", 
   },
   menuItem: {
     flexDirection: "row",

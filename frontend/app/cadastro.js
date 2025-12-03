@@ -6,7 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function Cadastro() {
   const router = useRouter();
@@ -31,6 +31,7 @@ export default function Cadastro() {
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
 
   // Lista de instituições para o Picker
   const [instituicoesList, setInstituicoesList] = useState([]);
@@ -168,6 +169,12 @@ export default function Cadastro() {
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
+
+      {/* ===== BOTÃO DE VOLTAR ===== */}
+<Pressable style={styles.voltarButton} onPress={() => router.push('/login')}>
+  <Text style={styles.voltarText}>← Voltar</Text>
+</Pressable>
+
       <View style={styles.container}>
         <Image
           source={require('../assets/images/logo.png')}
@@ -223,6 +230,7 @@ export default function Cadastro() {
                 ))}
               </Picker>
             </View>
+            
 
             {renderField("Crie uma senha", password, setPassword, true)}
             {renderField("Confirme a senha", confirmPassword, setConfirmPassword, true)}
@@ -273,6 +281,8 @@ const styles = StyleSheet.create({
   radioText: { fontSize: 14 },
   button: { backgroundColor: '#28a745', width: '100%', padding: 15, borderRadius: 8, marginTop: 10, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  loginText: { marginTop: 20, color: '#007bff', fontSize: 14, fontStyle: 'italic' },
+  loginText: { marginTop: 20, color: '#28a745', fontSize: 14, fontStyle: 'italic' },
+  voltarButton: { alignSelf: 'flex-start', marginBottom: 15, padding:20},
+voltarText: {color: '#28a745', fontSize: 16, fontWeight: '500',  fontWeight: 'bold'},
 });
  

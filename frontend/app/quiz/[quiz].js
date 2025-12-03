@@ -5,8 +5,8 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const API = "http://localhost:3000/api/quizzes";
-const API_URL = "http://localhost:3000";
+const API = "https://backend-reciclagame.vercel.app/api/quizzes";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function QuizStartScreen() {
   const router = useRouter();

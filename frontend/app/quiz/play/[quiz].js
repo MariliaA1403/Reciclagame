@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 
 export default function QuizPlayScreen() {

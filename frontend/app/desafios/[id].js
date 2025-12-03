@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 
-const API_URL = "http://localhost:3000"; // ou IP da máquina
+const API_URL = "https://backend-reciclagame.vercel.app"; // ou IP da máquina
 
 export default function DesafioDetalhe() {
   const router = useRouter();

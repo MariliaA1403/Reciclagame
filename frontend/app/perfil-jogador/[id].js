@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function PerfilJogador() {
   const { id } = useLocalSearchParams();
@@ -77,7 +77,7 @@ export default function PerfilJogador() {
       <View style={styles.infoContainer}>
         {jogador.avatar_url && (
           <Image 
-            source={{ uri: jogador.avatar_url.startsWith("http") ? jogador.avatar_url : `http://localhost:3000${jogador.avatar_url}` }} 
+            source={{ uri: jogador.avatar_url.startsWith("http") ? jogador.avatar_url : `https://backend-reciclagame.vercel.app${jogador.avatar_url}` }} 
             style={styles.infoAvatar} 
           />
         )}

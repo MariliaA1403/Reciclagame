@@ -12,7 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native"; // para navegação
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function CentralConta() {
   const navigation = useNavigation(); // hook de navegação
@@ -42,7 +42,7 @@ export default function CentralConta() {
         setDataNascimento(formatted);
       }
 
-      setAvatar(parsed.avatar_url ? `http://localhost:3000${parsed.avatar_url}` : null);
+      setAvatar(parsed.avatar_url ? `https://backend-reciclagame.vercel.app${parsed.avatar_url}` : null);
     }
     loadUser();
   }, []);
@@ -131,7 +131,7 @@ export default function CentralConta() {
               });
               const data = await res.json();
               if (data.success) {
-                setAvatar(`http://localhost:3000${data.avatar_url}`);
+                setAvatar(`https://backend-reciclagame.vercel.app${data.avatar_url}`);
                 const updatedUser = { ...user, avatar_url: data.avatar_url };
                 setUser(updatedUser);
                 await AsyncStorage.setItem("user", JSON.stringify(updatedUser));

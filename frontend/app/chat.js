@@ -11,8 +11,9 @@ import {
   Modal,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link } from "expo-router";
 
-const API_URL = "http://localhost:3000"; // substitua pela URL do seu backend
+const API_URL = "https://backend-reciclagame.vercel.app"; 
 
 export default function Chat() {
   const [mensagens, setMensagens] = useState([]);
@@ -158,6 +159,15 @@ export default function Chat() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.container}>
+        {/* Botão de voltar para home-instituicao */}
+        <View style={{ marginBottom: 10 }}>
+          <Link href="/home-instituicao">
+            <TouchableOpacity style={{ backgroundColor: "#278148", padding: 10, borderRadius: 8 }}>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>Voltar</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
         <ScrollView
           style={styles.mensagensContainer}
           ref={scrollViewRef}

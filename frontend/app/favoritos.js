@@ -11,7 +11,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function Favoritos() {
   const [loading, setLoading] = useState(true);

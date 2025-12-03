@@ -29,7 +29,7 @@ export default function Perfil() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const response = await fetch(`http://localhost:3000/users/${userId}`);
+        const response = await fetch(`https://backend-reciclagame.vercel.app/users/${userId}`);
         const data = await response.json();
 
         setUser(data);
@@ -50,7 +50,7 @@ export default function Perfil() {
   // ===========================
   async function salvarAlteracoes() {
     try {
-      const response = await fetch(`http://localhost:3000/users/${userId}`, {
+      const response = await fetch(`https://backend-reciclagame.vercel.app/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useRouter, useSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://localhost:3000"; // troque pelo IP do servidor
+const API_URL = "https://backend-reciclagame.vercel.app"; 
 
 export default function PerfilUsuario() {
   const router = useRouter();
-  const { id } = useSearchParams(); // id do usuário que você está visitando
+  const { id } = useSearchParams(); 
   const [usuario, setUsuario] = useState(null);
   const [desafios, setDesafios] = useState([]);
 

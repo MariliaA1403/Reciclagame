@@ -35,6 +35,7 @@ export default function RootLayout() {
         <Stack.Screen name="quiz/play/[quiz]" options={{ headerShown: false }} />
         <Stack.Screen name="recuperar-senha" options={{ headerShown: false }} />
         <Stack.Screen name="sobre" options={{ headerShown: false }} />
+        <Stack.Screen name="cadastroSucesso" options={{ headerShown: false }} />
 
         {/* Modal (opcional) */}
         <Stack.Screen

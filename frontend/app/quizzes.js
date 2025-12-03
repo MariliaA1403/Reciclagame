@@ -8,7 +8,7 @@ import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 
 export default function QuizzesScreen() {

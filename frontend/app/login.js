@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, Scro
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = "http://localhost:3000"; // ou sua URL do servidor
+const API_URL = "https://backend-reciclagame.vercel.app"; 
 
 export default function Login() {
   const router = useRouter();

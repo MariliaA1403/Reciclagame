@@ -29,7 +29,7 @@ export default function HomeScreen() {
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const API_URL = "http://localhost:3000";
+  const API_URL = "https://backend-reciclagame.vercel.app";
   const [chartWidth, setChartWidth] = useState(Dimensions.get("window").width - 40);
 
   // ====== RESIZE ======

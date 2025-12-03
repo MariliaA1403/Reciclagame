@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 
-const API_URL = "http://localhost:3000"; // ajuste para sua URL do servidor
+const API_URL = "https://backend-reciclagame.vercel.app"; 
 
 export default function RecuperarSenha() {
   const router = useRouter();
@@ -76,11 +76,17 @@ export default function RecuperarSenha() {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
+        
+      {/* ===== BOTÃO DE VOLTAR ===== */}
+<TouchableOpacity style={styles.voltarButton} onPress={() => router.push('/login')}>
+  <Text style={styles.voltarText}>← Voltar</Text>
+</TouchableOpacity>
+
 
         {/* ===== LOGO SEM SOMBRA ===== */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('../assets/images/logo.png')} // ajuste o caminho para sua logo
+            source={require('../assets/images/logo.png')} 
             style={styles.logo}
           />
         </View>
@@ -139,11 +145,20 @@ const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
   container: { width: '90%', padding: 20 },
 
+  voltarButton: {
+    marginBottom: 15,
+  },
+  voltarText: {
+    color: '#278148',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
   logoContainer: {
     alignItems: 'center',
     marginBottom: 20,
   },
-   logo: { 
+  logo: { 
     width: 200, 
     height: 200, 
     marginBottom: 20,

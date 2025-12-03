@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router"; // useLocalSearchParams é suportado
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 const imagens = {
   1: require("../assets/images/desafio1.png"),
   2: require("../assets/images/desafio2.png"),

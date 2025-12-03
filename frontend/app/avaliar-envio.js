@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function AvaliarEnvios() {
   const [envios, setEnvios] = useState([]);
@@ -109,7 +109,7 @@ export default function AvaliarEnvios() {
                     {fotosArray.map((fotoUri, idx) => (
                       <Image
                         key={idx}
-                        source={{ uri: `http://localhost:3000${fotoUri}` }}
+                        source={{ uri: `https://backend-reciclagame.vercel.app${fotoUri}` }}
                         style={styles.foto}
                         resizeMode="contain"
                       />

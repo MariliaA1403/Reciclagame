@@ -1,8 +1,6 @@
 // app/api.js
 
-// 👉 troque pelo IP da sua máquina rodando o backend
-// Exemplo: const API_URL = "http://192.168.1.10:3000";
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 // Buscar dados do usuário por ID
 export async function fetchUserById(id) {

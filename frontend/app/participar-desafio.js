@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-const API_URL = "http://localhost:3000"; 
+const API_URL = "https://backend-reciclagame.vercel.app"; 
 const screenWidth = Dimensions.get("window").width;
 
 export default function ParticiparDesafio() {

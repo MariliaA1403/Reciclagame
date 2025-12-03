@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://backend-reciclagame.vercel.app";
 const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 const screenWidth = Dimensions.get("window").width;
 
@@ -326,7 +326,7 @@ cardTitle: {
   marginBottom: 8,
 },
 cardDescription: {
-  fontSize: 16,          // descrição maior
+  fontSize: 16,         
   color: "#333",
 },
 
