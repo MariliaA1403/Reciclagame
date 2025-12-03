@@ -21,6 +21,20 @@ export default function RootLayout() {
         <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="desafios" options={{ headerShown: false }} />
         <Stack.Screen name="verificar-email" options={{ headerShown: false }} />
+        <Stack.Screen name="chat" options={{ headerShown: false }} />
+        <Stack.Screen name="quizzes" options={{ headerShown: false }} />
+        <Stack.Screen name="noticias" options={{ headerShown: false }} />
+        <Stack.Screen name="central-conta" options={{ headerShown: false }} />
+        <Stack.Screen name="favoritos" options={{ headerShown: false }} />
+        <Stack.Screen name="avaliar-envio" options={{ headerShown: false }} />
+        <Stack.Screen name="home-instituicao" options={{ headerShown: false }} />
+        <Stack.Screen name="perfil-jogador/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="avaliar-desafio" options={{ headerShown: false }} />
+        <Stack.Screen name="participar-desafio" options={{ headerShown: false }} />
+        <Stack.Screen name="quiz/[quiz]" options={{ headerShown: false }} />
+        <Stack.Screen name="quiz/play/[quiz]" options={{ headerShown: false }} />
+        <Stack.Screen name="recuperar-senha" options={{ headerShown: false }} />
+        <Stack.Screen name="sobre" options={{ headerShown: false }} />
 
         {/* Modal (opcional) */}
         <Stack.Screen

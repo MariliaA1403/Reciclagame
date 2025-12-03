@@ -1,17 +1,19 @@
-import { useState } from 'react';
+// app/Cadastro.js
+import { useState, useEffect } from 'react';
 import { 
-  View, Text, TextInput, StyleSheet, Image, ScrollView, Alert, Pressable
+  View, Text, TextInput, StyleSheet, Image, ScrollView, Alert, Pressable 
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
 
-// URL DO BACKEND (IMPORTANTE: SEM "/" NO FINAL)
 const API_URL = "http://localhost:3000";
 
 export default function Cadastro() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // CAMPOS INSTITUIÇÃO
+  // Estados Instituição
   const [institutionName, setInstitutionName] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [institutionEmail, setInstitutionEmail] = useState('');
@@ -20,37 +22,65 @@ export default function Cadastro() {
   const [institutionPassword, setInstitutionPassword] = useState('');
   const [institutionConfirmPassword, setInstitutionConfirmPassword] = useState('');
 
-  // CAMPOS JOGADOR
+  // Estados Jogador
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [matricula, setMatricula] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [studentInstitution, setStudentInstitution] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // FUNÇÃO DE CADASTRO
+  // Lista de instituições para o Picker
+  const [instituicoesList, setInstituicoesList] = useState([]);
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState('');
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/instituicoes`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setInstituicoesList(data.instituicoes);
+      })
+      .catch(err => console.log(err));
+  }, []);
+
   const handleRegister = async () => {
+    setErrorMessage('');
     if (!selectedType) {
-      Alert.alert("Erro", "Selecione se você é instituição ou jogador.");
+      setErrorMessage("Selecione se você é instituição ou jogador.");
       return;
     }
 
     let body = {};
+    let camposFaltando = [];
 
-    // ===== JOGADOR =====
     if (selectedType === "jogador") {
-      if (!userName || !userEmail || !matricula || !birthDate || !phone ||
-          !address || !studentInstitution || !password || !confirmPassword) {
-        Alert.alert("Erro", "Preencha todos os campos obrigatórios.");
+      if (!userName) camposFaltando.push("Nome");
+      if (!userEmail) camposFaltando.push("Email");
+      if (!matricula) camposFaltando.push("Matrícula");
+      if (!birthDate) camposFaltando.push("Data de Nascimento");
+      if (!phone) camposFaltando.push("Telefone");
+      if (!address) camposFaltando.push("Endereço");
+      if (!selectedInstitutionId) camposFaltando.push("Instituição");
+      if (!password) camposFaltando.push("Senha");
+      if (!confirmPassword) camposFaltando.push("Confirmação de Senha");
+
+      if (camposFaltando.length > 0) {
+        setErrorMessage("Preencha todos os campos obrigatórios: " + camposFaltando.join(", "));
         return;
       }
 
       if (password !== confirmPassword) {
-        Alert.alert("Erro", "As senhas não coincidem.");
+        setErrorMessage("As senhas não coincidem.");
         return;
+      }
+
+      // --- Converte a data de DD/MM/YYYY para YYYY-MM-DD ---
+      let formattedDate = birthDate;
+      if (birthDate.includes('/')) {
+        const parts = birthDate.split('/');
+        formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
       }
 
       body = {
@@ -58,25 +88,30 @@ export default function Cadastro() {
         nome: userName,
         email: userEmail,
         matricula,
-        data_nascimento: birthDate,
+        data_nascimento: formattedDate,
         telefone: phone,
         endereco: address,
-        instituicao: studentInstitution,
+        instituicao_id: selectedInstitutionId,
         senha: password,
       };
     }
 
-    // ===== INSTITUIÇÃO =====
     if (selectedType === "instituicao") {
-      if (!institutionName || !cnpj || !institutionEmail ||
-          !institutionPhone || !institutionAddress ||
-          !institutionPassword || !institutionConfirmPassword) {
-        Alert.alert("Erro", "Preencha todos os campos obrigatórios.");
+      if (!institutionName) camposFaltando.push("Nome da Instituição");
+      if (!cnpj) camposFaltando.push("CNPJ");
+      if (!institutionEmail) camposFaltando.push("Email");
+      if (!institutionPhone) camposFaltando.push("Telefone");
+      if (!institutionAddress) camposFaltando.push("Endereço");
+      if (!institutionPassword) camposFaltando.push("Senha");
+      if (!institutionConfirmPassword) camposFaltando.push("Confirmação de Senha");
+
+      if (camposFaltando.length > 0) {
+        setErrorMessage("Preencha todos os campos obrigatórios: " + camposFaltando.join(", "));
         return;
       }
 
       if (institutionPassword !== institutionConfirmPassword) {
-        Alert.alert("Erro", "As senhas não coincidem.");
+        setErrorMessage("As senhas não coincidem.");
         return;
       }
 
@@ -92,47 +127,34 @@ export default function Cadastro() {
     }
 
     try {
-      console.log("📤 ENVIANDO PARA O BACKEND:", body);
-
-      const response = await fetch(`${API_URL}/register`, {
+      const response = await fetch(`${API_URL}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      const rawText = await response.text();
-      console.log("📥 RESPOSTA DO BACKEND:", rawText);
-
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        Alert.alert("Erro", "Erro inesperado no servidor.");
-        return;
-      }
+      const data = await response.json();
 
       if (!response.ok) {
-        Alert.alert("Erro", data.message || "Erro ao cadastrar.");
+        setErrorMessage(data.message || "Erro ao cadastrar.");
         return;
       }
 
       Alert.alert("Sucesso!", data.message || "Cadastro realizado.");
-      router.push("/verificar-email");
+      router.push("/cadastroSucesso");
 
     } catch (error) {
-      console.log("💥 ERRO:", error);
-      Alert.alert("Erro", "Não foi possível conectar ao servidor.");
+      setErrorMessage("Não foi possível conectar ao servidor.");
+      console.log(error);
     }
   };
 
-  // COMPONENTE DE CAMPO
   const renderField = (placeholder, value, setValue, secure = false) => (
     <View style={{ width: '100%' }}>
       <View style={styles.requiredContainer}>
         <Text style={styles.requiredText}>este campo é obrigatório</Text>
         <Text style={styles.requiredStar}>*</Text>
       </View>
-
       <TextInput
         style={styles.input}
         placeholder={placeholder}
@@ -147,23 +169,22 @@ export default function Cadastro() {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
-
-        {/* LOGO */}
         <Image
           source={require('../assets/images/logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
-
         <Text style={styles.welcome}>Bem-vindo(a) ao ReciclaGame!</Text>
 
-        {/* TIPO */}
+        {errorMessage ? (
+          <Text style={{ color: 'red', marginBottom: 10, textAlign: 'center' }}>{errorMessage}</Text>
+        ) : null}
+
         <View style={styles.typeContainer}>
           <View style={styles.typeLabelContainer}>
             <Text style={styles.typeLabel}>Você é Instituição ou Jogador?</Text>
             <Text style={styles.requiredStar}>*</Text>
           </View>
-
           <View style={styles.radioContainer}>
             <Pressable style={styles.radioOption} onPress={() => setSelectedType('instituicao')}>
               <View style={styles.radioCircle}>
@@ -171,7 +192,6 @@ export default function Cadastro() {
               </View>
               <Text style={styles.radioText}>Instituição</Text>
             </Pressable>
-
             <Pressable style={styles.radioOption} onPress={() => setSelectedType('jogador')}>
               <View style={styles.radioCircle}>
                 {selectedType === 'jogador' && <View style={styles.radioSelected} />}
@@ -181,16 +201,29 @@ export default function Cadastro() {
           </View>
         </View>
 
-        {/* CAMPOS DE CADA TIPO */}
         {selectedType === 'jogador' && (
           <>
             {renderField("Digite seu nome completo", userName, setUserName)}
             {renderField("Digite seu email", userEmail, setUserEmail)}
             {renderField("Digite sua matrícula", matricula, setMatricula)}
-            {renderField("Digite sua data de nascimento", birthDate, setBirthDate)}
+            {renderField("Digite sua data de nascimento (DD/MM/YYYY)", birthDate, setBirthDate)}
             {renderField("Digite seu telefone / WhatsApp", phone, setPhone)}
             {renderField("Digite seu endereço", address, setAddress)}
-            {renderField("Digite sua instituição", studentInstitution, setStudentInstitution)}
+
+            <View style={{ width: '100%', marginBottom: 20 }}>
+              <Text style={{ marginBottom: 5 }}>Selecione sua instituição *</Text>
+              <Picker
+                selectedValue={selectedInstitutionId}
+                onValueChange={(itemValue) => setSelectedInstitutionId(itemValue)}
+                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 10 }}
+              >
+                <Picker.Item label="Selecione..." value="" />
+                {instituicoesList.map(inst => (
+                  <Picker.Item key={inst.id} label={inst.nome} value={inst.id} />
+                ))}
+              </Picker>
+            </View>
+
             {renderField("Crie uma senha", password, setPassword, true)}
             {renderField("Confirme a senha", confirmPassword, setConfirmPassword, true)}
           </>
@@ -208,25 +241,23 @@ export default function Cadastro() {
           </>
         )}
 
-        {/* BOTÃO */}
         <Pressable style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Cadastrar</Text>
         </Pressable>
 
-        <Pressable onPress={() => router.push('/')}>
+        <Pressable onPress={() => router.push('/login')}>
           <Text style={styles.loginText}>Já tem uma conta? Faça login</Text>
         </Pressable>
-
       </View>
     </ScrollView>
   );
 }
 
-// ====================== STYLES ======================
 const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, backgroundColor: '#fff', alignItems: 'center' },
   container: { width: '90%', alignItems: 'center', padding: 20 },
-  logo: { width: 150, height: 150, marginBottom: 10 },
+  logo: { width: 200, height: 200, marginBottom: 10,  marginBottom: 20, shadowColor: "#000",
+  shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4, },
   welcome: { fontSize: 22, fontWeight: 'bold', marginBottom: 25 },
   requiredContainer: { flexDirection: 'row', alignItems: 'center', marginLeft: 5, marginBottom: 3 },
   requiredText: { fontSize: 12, color: '#000', fontStyle: 'italic' },
@@ -244,3 +275,4 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   loginText: { marginTop: 20, color: '#007bff', fontSize: 14, fontStyle: 'italic' },
 });
+ 

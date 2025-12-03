@@ -1,160 +1,254 @@
-import { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  Alert,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native"; // para navegação
+
+const API_URL = "http://localhost:3000/api";
 
 export default function CentralConta() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation(); // hook de navegação
+  const [user, setUser] = useState(null);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [avatar, setAvatar] = useState(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    if (params.user) {
-      const parsedUser = JSON.parse(params.user);
-      setUserData(parsedUser);
+    async function loadUser() {
+      const raw = await AsyncStorage.getItem("user");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      setUser(parsed);
+      setNome(parsed.nome || "");
+      setEmail(parsed.email || "");
+      setTelefone(parsed.telefone || "");
+      setEndereco(parsed.endereco || "");
+
+      if (parsed.data_nascimento) {
+        const d = new Date(parsed.data_nascimento);
+        const formatted = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+        setDataNascimento(formatted);
+      }
+
+      setAvatar(parsed.avatar_url ? `http://localhost:3000${parsed.avatar_url}` : null);
     }
-    setLoading(false);
+    loadUser();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#278148" />
-        <Text style={{ marginTop: 10 }}>Carregando dados...</Text>
-      </View>
-    );
-  }
+  const updateUser = async () => {
+    try {
+      const payload = { nome, email, telefone, endereco };
+      const res = await fetch(`${API_URL}/jogadores/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert("Sucesso", "Dados atualizados!");
+        setUser(data.jogador);
+        await AsyncStorage.setItem("user", JSON.stringify(data.jogador));
+        setEditMode(false);
+      } else {
+        Alert.alert("Erro", "Não foi possível atualizar os dados.");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erro", "Erro ao atualizar usuário.");
+    }
+  };
 
-  if (!userData) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Erro ao carregar os dados do usuário.</Text>
-      </View>
-    );
-  }
+  const removeAvatar = async () => {
+    Alert.alert("Remover Foto", "Deseja remover a foto do perfil?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Remover",
+        onPress: async () => {
+          try {
+            const res = await fetch(`${API_URL}/upload-avatar/${user.id}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+              setAvatar(null);
+              const updatedUser = { ...user, avatar_url: null };
+              setUser(updatedUser);
+              await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+            } else {
+              Alert.alert("Erro", data.message || "Não foi possível remover o avatar.");
+            }
+          } catch (err) {
+            console.error(err);
+            Alert.alert("Erro", "Erro ao remover avatar.");
+          }
+        },
+        style: "destructive",
+      },
+    ]);
+  };
+
+  if (!user) return <Text>Carregando...</Text>;
 
   return (
-    <View style={styles.container}>
-      {/* FOTO DO PERFIL */}
-      <Image
-        source={
-          userData.foto
-            ? { uri: userData.foto }
-            : { uri: "https://via.placeholder.com/150" } // imagem padrão
-        }
-        style={styles.photo}
-      />
-
-      {/* NOME */}
-      <Text style={styles.name}>{userData.nome}</Text>
-
-      {/* INFORMAÇÕES */}
-      <View style={styles.infoBox}>
-        <Text style={styles.label}>📌 Matrícula:</Text>
-        <Text style={styles.value}>{userData.matricula}</Text>
-
-        <Text style={styles.label}>🎂 Data de Nascimento:</Text>
-        <Text style={styles.value}>{userData.data_nascimento}</Text>
-
-        <Text style={styles.label}>📞 Telefone:</Text>
-        <Text style={styles.value}>{userData.telefone}</Text>
-
-        <Text style={styles.label}>🏠 Endereço:</Text>
-        <Text style={styles.value}>{userData.endereco}</Text>
-
-        <Text style={styles.label}>🏫 Instituição:</Text>
-        <Text style={styles.value}>{userData.instituicao}</Text>
-
-        <Text style={styles.label}>📧 Email:</Text>
-        <Text style={styles.value}>{userData.email}</Text>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate("home")}>
+          <Text style={styles.headerBack}>{"< Voltar"}</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Minha Conta</Text>
       </View>
 
-      {/* BOTÃO DE EDITAR */}
+      <View style={styles.avatarContainer}>
+        {avatar ? (
+          <Image source={{ uri: avatar }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={{ color: "#fff", fontSize: 32 }}>+</Text>
+          </View>
+        )}
+
+        <View style={styles.fileContainer}>
+          <input type="file" accept="image/*" onChange={async e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append("avatar", file);
+            try {
+              const res = await fetch(`${API_URL}/upload-avatar/${user.id}`, {
+                method: "POST",
+                body: formData,
+              });
+              const data = await res.json();
+              if (data.success) {
+                setAvatar(`http://localhost:3000${data.avatar_url}`);
+                const updatedUser = { ...user, avatar_url: data.avatar_url };
+                setUser(updatedUser);
+                await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+              } else {
+                Alert.alert("Erro", data.message || "Erro ao atualizar avatar.");
+              }
+            } catch (err) {
+              console.error(err);
+              Alert.alert("Erro", "Erro ao enviar avatar.");
+            }
+          }} />
+
+          {avatar && (
+            <button
+              onClick={removeAvatar}
+              style={{
+                marginLeft: 10,
+                padding: 6,
+                backgroundColor: "#f44336",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              Remover
+            </button>
+          )}
+        </View>
+      </View>
+
+      <Text style={styles.label}>Nome</Text>
+      <TextInput style={styles.input} value={nome} onChangeText={setNome} editable={editMode} />
+
+      <Text style={styles.label}>Email</Text>
+      <TextInput style={styles.input} value={email} onChangeText={setEmail} editable={editMode} />
+
+      <Text style={styles.label}>Telefone</Text>
+      <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} editable={editMode} />
+
+      <Text style={styles.label}>Endereço</Text>
+      <TextInput style={styles.input} value={endereco} onChangeText={setEndereco} editable={editMode} />
+
+      <Text style={styles.label}>Data de Nascimento</Text>
+      <TextInput style={styles.input} value={dataNascimento} editable={false} />
+
       <TouchableOpacity
-        style={styles.editButton}
-        onPress={() =>
-          router.push({
-            pathname: "/editar-conta",
-            params: { user: JSON.stringify(userData) },
-          })
-        }
+        style={editMode ? styles.saveButton : styles.editButton}
+        onPress={editMode ? updateUser : () => setEditMode(true)}
       >
-        <Text style={styles.editButtonText}>Editar dados</Text>
+        <Text style={styles.buttonText}>{editMode ? "Salvar" : "Editar Informações"}</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
-// ESTILOS
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#FCFDFD",
-    alignItems: "center",
-  },
-
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  errorText: {
-    color: "red",
-    fontSize: 18,
-  },
-
-  photo: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: "#ccc",
+  container: { padding: 20, backgroundColor: "#f9f9f9" },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20, color: "#333" },
+  label: { fontWeight: "bold", marginBottom: 5, color: "#555" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 12,
     marginBottom: 15,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    fontSize: 16,
   },
-
-  name: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#278148",
-    marginBottom: 20,
+  avatarContainer: { alignItems: "center", marginBottom: 25 },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
   },
-
-  infoBox: {
-    width: "100%",
-    backgroundColor: "#EEEEEE",
+  avatarPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#bbb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fileContainer: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editButton: {
+    backgroundColor: "#4CAF50",
     padding: 15,
     borderRadius: 12,
-    marginBottom: 25,
+    alignItems: "center",
   },
-
-  label: {
+  saveButton: {
+    backgroundColor: "#2E7D32",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerBack: {
+    color: "#4CAF50",
     fontWeight: "bold",
     fontSize: 16,
-    marginTop: 10,
+    marginRight: 10,
   },
-
-  value: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
     color: "#333",
-  },
-
-  editButton: {
-    backgroundColor: "#278148",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 10,
-  },
-
-  editButtonText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
   },
 });

@@ -1,619 +1,437 @@
-// app/home.js
+// =================== Home.js ===================
 import React, { useState, useEffect } from "react";
-import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Animated,
-  Image
+  Dimensions,
+  Alert,
+  Image,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFonts, JockeyOne_400Regular } from "@expo-google-fonts/jockey-one";
-import { MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BarChart } from "react-native-chart-kit";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
 const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [fontsLoaded] = useFonts({ JockeyOne_400Regular });
+  const [user, setUser] = useState({ id: null, nome: "Usuário", pontos: 0, levelProgress: 0, avatar_url: null });
+  const [desafios, setDesafios] = useState([]);
+  const [sideMenuVisible, setSideMenuVisible] = useState(false);
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const API_URL = "http://localhost:3000";
+  const [chartWidth, setChartWidth] = useState(Dimensions.get("window").width - 40);
 
-  const [user, setUser] = useState({
-    name: "Usuário",
-    points: 0,
-    levelProgress: 0,
-  });
-
+  // ====== RESIZE ======
   useEffect(() => {
-    async function loadUserFromStorage() {
-      try {
-        const raw = await AsyncStorage.getItem("user");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          setUser((prev) => ({
-            ...prev,
-            name: parsed.name ?? prev.name,
-            points: parsed.points ?? prev.points,
-            levelProgress: parsed.levelProgress ?? prev.levelProgress,
-          }));
-        }
-      } catch (err) {
-        console.log("Erro ao carregar usuário do AsyncStorage:", err);
-      }
-    }
-    loadUserFromStorage();
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setChartWidth(window.width - 40);
+    });
+    return () => subscription?.remove();
   }, []);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const slideAnim = useState(new Animated.Value(0))[0];
+  
+  // ====== LOAD USER E PONTOS ======
+useEffect(() => {
+  async function loadUserAndPontos() {
+    const raw = await AsyncStorage.getItem("user");
+    if (!raw) return;
 
-  const openCard = () => {
-    setModalVisible(true);
-    Animated.timing(slideAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
+    const parsed = JSON.parse(raw);
+    const userId = parsed.id;
 
-  const closeCard = () => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setModalVisible(false));
-  };
+    try {
+      // 1️⃣ Buscar dados do jogador
+      const userRes = await fetch(`${API_URL}/api/jogadores/${userId}`);
+      const userData = await userRes.json();
 
-  // MENU DAS TRÊS LISTRAS
-  const [sideMenuVisible, setSideMenuVisible] = useState(false);
-  const sideMenuAnim = useState(new Animated.Value(300))[0];
+      // 2️⃣ Buscar pontos totais (desafios + quizzes)
+      const pontosRes = await fetch(`${API_URL}/api/jogadores/${userId}/pontos-total`);
+      const pontosData = await pontosRes.json();
 
-  const openSideMenu = () => {
-    setSideMenuVisible(true);
-    Animated.timing(sideMenuAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
+      setUser({
+        id: userId,
+        nome: userData.nome || "Usuário",
+        pontos: pontosData.success ? pontosData.totalFinal : 0,
+        levelProgress: 0, // calcularemos depois com desafios
+        avatar_url: userData.avatar_url || null,
+      });
+    } catch (err) {
+      console.error("Erro ao carregar usuário e pontos:", err);
+    }
+  }
 
-  const closeSideMenu = () => {
-    Animated.timing(sideMenuAnim, {
-      toValue: 300,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setSideMenuVisible(false));
-  };
+  loadUserAndPontos();
+}, []);
 
-  // MENU DO AVATAR (LADO ESQUERDO)
-  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
-  const profileMenuAnim = useState(new Animated.Value(-300))[0];
 
-  const openProfileMenu = () => {
-    setProfileMenuVisible(true);
-    Animated.timing(profileMenuAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
+  // ====== LOAD DESAFIOS ======
+  useEffect(() => {
+    if (!user.id) return;
 
-  const closeProfileMenu = () => {
-    Animated.timing(profileMenuAnim, {
-      toValue: -300,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setProfileMenuVisible(false));
-  };
+    async function loadDesafios() {
+      try {
+        const response = await fetch(`${API_URL}/api/desafios?jogadorId=${user.id}`);
+        const data = await response.json();
+        if (data.success) {
+          const desafiosAtualizados = data.desafios.map(d => ({ ...d, concluido: d.concluido }));
+          setDesafios(desafiosAtualizados);
+
+         setUser(prev => ({
+  ...prev,
+  levelProgress: calculateProgress(desafiosAtualizados)
+}));
+
+        }
+      } catch (err) {
+        console.error("Erro ao carregar desafios:", err);
+      }
+    }
+
+    loadDesafios();
+    const interval = setInterval(loadDesafios, 5000);
+    return () => clearInterval(interval);
+  }, [user.id]);
 
   if (!fontsLoaded) return null;
 
+  // ====== FUNÇÃO DE PROGRESSO ======
+  function calculateProgress(listaDesafios) {
+    const total = listaDesafios.length || 1;
+    const concluido = listaDesafios.filter(d => d.concluido).length;
+    return (concluido / total) * 100;
+  }
+
+  // ====== CONCLUIR DESAFIO ======
+  async function handleConcluirDesafio(desafio) {
+    if (isSubmitting || desafio.concluido) return;
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/desafios/concluir`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, desafioId: desafio.id }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        Alert.alert("Erro", data.message || "Não foi possível concluir o desafio");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const novosDesafios = desafios.map(d => (d.id === desafio.id ? { ...d, concluido: true } : d));
+      setDesafios(novosDesafios);
+
+      setUser(prev => ({
+        ...prev,
+        pontos: data.pontosAtualizados,
+        levelProgress: calculateProgress(novosDesafios),
+      }));
+
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erro", "Erro ao concluir desafio");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // ====== UPLOAD AVATAR (continuará na Central-Conta) ======
+  const changeAvatar = async () => {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) {
+      Alert.alert("Permissão necessária", "Precisamos acessar suas fotos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+
+    if (result.canceled) return;
+
+    const uri = Platform.OS === "ios" ? result.assets[0].uri.replace("file://", "") : result.assets[0].uri;
+    const formData = new FormData();
+    formData.append("avatar", { uri, name: `avatar_${Date.now()}.jpg`, type: "image/jpeg" });
+
+    try {
+      const res = await fetch(`${API_URL}/upload-avatar/${user.id}`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success) {
+        const updatedUser = { ...user, avatar_url: data.avatar_url };
+        setUser(updatedUser);
+        await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+        Alert.alert("Sucesso", "Avatar atualizado!");
+      } else {
+        Alert.alert("Erro", data.message || "Erro ao atualizar avatar.");
+      }
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Erro", "Erro ao enviar avatar.");
+    }
+  };
+
+  const concluidoCount = desafios.filter(d => d.concluido).length;
+  const pendenteCount = desafios.filter(d => !d.concluido).length;
+
+  const barChartData = {
+    labels: ["Concluído", "Pendente", "Não iniciado"],
+    datasets: [{ data: [concluidoCount, pendenteCount, 0] }],
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* --- TOPO SEMICÍRCULO --- */}
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <LinearGradient
           colors={GRADIENT_COLORS}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
         >
-          <View style={styles.leftHeader}>
-            <TouchableOpacity onPress={openProfileMenu}>
-              <View style={styles.avatarPlaceholder}>
-                <MaterialCommunityIcons name="account" size={36} color="#fff" />
-              </View>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => setProfileMenuVisible(true)}>
+              {user.avatar_url ? (
+                <Image source={{ uri: `${API_URL}${user.avatar_url}` }} style={styles.avatar} />
+              ) : (
+                <MaterialCommunityIcons name="account-circle" size={60} color="#fff" />
+              )}
             </TouchableOpacity>
-            <View style={{ marginLeft: 10 }}>
-              <Text style={styles.username}>{user.name}</Text>
-              <Text style={styles.pointsText}>{user.points} pontos</Text>
-              <View style={styles.progressBar}>
-                <View
-                  style={[styles.progress, { width: `${user.levelProgress}%` }]}
-                />
+            <View style={{ marginLeft: 12, flex: 1 }}>
+              <Text style={styles.username}>{user.nome}</Text>
+              <Text style={styles.pointsText}>{user.pontos} pontos</Text>
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressBarBackground}>
+                  <View style={[styles.progressBarFill, { width: `${user.levelProgress}%` }]} />
+                </View>
+                <Text style={styles.progressPercentage}>{Math.round(user.levelProgress)}%</Text>
               </View>
             </View>
           </View>
-
-          <View style={styles.rightHeader}>
-            <TouchableOpacity onPress={openSideMenu} style={styles.menuButton}>
-              <MaterialCommunityIcons name="menu" size={28} color="#242222ff" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => setSideMenuVisible(true)}>
+            <MaterialCommunityIcons name="menu" size={28} color="#242222ff" />
+          </TouchableOpacity>
         </LinearGradient>
 
-        {/* --- BOTÕES DESAFIOS --- */}
-        <View style={styles.desafioButtons}>
-          <TouchableOpacity
-            style={[styles.desafioButton, { backgroundColor: "rgba(89,241,156,0.3)" }]}
-          >
-            <Text style={styles.desafioButtonText}>Desafios concluídos</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.desafioButton, { backgroundColor: "rgba(255,32,32,0.3)" }]}
-          >
-            <Text style={styles.desafioButtonText}>Desafios pendentes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.desafioButton, { backgroundColor: "rgba(81,188,245,0.3)" }]}
-          >
-            <Text style={styles.desafioButtonText}>Desafio da Semana</Text>
-          </TouchableOpacity>
+        {/* ====== CARDS ====== */}
+        <View style={styles.cardsContainer}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Pontos</Text>
+            <Text style={styles.cardValue}>{user.pontos}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Progresso</Text>
+            <Text style={styles.cardValue}>{Math.round(user.levelProgress)}%</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Desafios Concluídos</Text>
+            <Text style={styles.cardValue}>{concluidoCount}</Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Desafios Pendentes</Text>
+            <Text style={styles.cardValue}>{pendenteCount}</Text>
+          </View>
         </View>
 
-        {/* --- DESAFIO DA SEMANA COM IMAGEM --- */}
-        <View style={styles.desafioSection}>
-          <Text style={styles.sectionTitle}>Desafio da Semana</Text>
 
-          <View style={styles.singleCard}>
-            <Image
-              source={require("../assets/images/desafio1.png")}
-              style={styles.desafioImage}
-              resizeMode="cover"
-            />
-            <Text style={styles.desafioTitulo}>Desafio da Coleta Seletiva</Text>
-            <Text style={styles.desafioDescricao}>
-              Participe da coleta seletiva e ajude a manter sua comunidade mais limpa!
-            </Text>
+{/* ====== BOTÕES DE DESAFIOS E QUIZZES ====== */}
+<View style={styles.quickAccessContainer}>
+  <TouchableOpacity
+    style={styles.quickButton}
+    onPress={() => router.push("/desafios")}
+  >
+    <Text style={styles.quickButtonText}>Ver Desafios</Text>
+  </TouchableOpacity>
 
-            <TouchableOpacity style={styles.botaoParticipar} onPress={openCard}>
-              <Text style={styles.botaoParticiparTexto}>Participar</Text>
-            </TouchableOpacity>
-          </View>
+  <TouchableOpacity
+    style={styles.quickButton}
+    onPress={() => router.push("/quizzes")}
+  >
+    <Text style={styles.quickButtonText}>Ver Quizzes</Text>
+  </TouchableOpacity>
+</View>
 
-          <TouchableOpacity
-            style={styles.botaoVerMais}
-            onPress={() => router.push("/desafios")}
-          >
-            <Text style={styles.botaoVerMaisTexto}>Ver mais desafios</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* --- SEMICÍRCULO INFERIOR COM MENU --- */}
-        <LinearGradient colors={GRADIENT_COLORS} style={styles.bottomSemiCircle}>
-          <View style={styles.bottomMenu}>
-            <FontAwesome5 name="home" size={22} color="#000" />
-            <FontAwesome5 name="trophy" size={22} color="#000" />
-            <FontAwesome5 name="book" size={22} color="#000" />
-            <FontAwesome5 name="bars" size={22} color="#000" />
-          </View>
-        </LinearGradient>
+        <Text style={styles.sectionTitle}>Status dos Desafios</Text>
+        <BarChart
+          data={barChartData}
+          width={chartWidth}
+          height={220}
+          chartConfig={{
+            backgroundColor: "#FCFDFD",
+            backgroundGradientFrom: "#E0F7E0",
+            backgroundGradientTo: "#E0F7E0",
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(39, 129, 72, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+          }}
+          style={{ marginVertical: 10, borderRadius: 10 }}
+          fromZero
+        />
 
-        {/* --- MODAL DESAFIO --- */}
-        {modalVisible && (
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity style={styles.overlayTouch} onPress={closeCard} />
-            <Animated.View
-              style={[
-                styles.bottomCard,
-                {
-                  transform: [
-                    {
-                      translateY: slideAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [500, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Desafio Criativo com Recicláveis</Text>
-                <TouchableOpacity onPress={closeCard}>
-                  <MaterialCommunityIcons name="close" size={26} color="#000" />
+
+        {/* ====== LISTA DE DESAFIOS ====== */}
+        {desafios.map(d => (
+          <View key={d.id} style={styles.listaDesafio}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text style={{ fontWeight: "bold" }}>{d.titulo}</Text>
+              <Text style={{ flexWrap: "wrap" }}>{d.descricao.replace(/\\n/g, '\n')}</Text>
+              <Text>{d.pontos} pontos</Text>
+            </View>
+
+            {!d.concluido ? (
+              <View style={{ flexDirection: "row", gap: 5 }}>
+                <TouchableOpacity
+                  style={{ backgroundColor: "#278148", padding: 5, borderRadius: 5 }}
+                  onPress={() => handleConcluirDesafio(d)}
+                  disabled={isSubmitting}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>Concluir</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{ backgroundColor: "#4CAF50", padding: 5, borderRadius: 5 }}
+                  onPress={() => router.push(`/participar-desafio?id=${d.id}`)}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "bold"}}>Participar</Text>
                 </TouchableOpacity>
               </View>
-
-              <Text style={styles.cardInfo}>
-                <Text style={{ fontWeight: "bold" }}>Pontuação:</Text> 50 pontos
-              </Text>
-
-              <Text style={styles.cardInfo}>
-                <Text style={{ fontWeight: "bold" }}>Avaliação:</Text> ⭐⭐⭐⭐⭐
-              </Text>
-
-              <Text style={styles.cardInfo}>
-                <Text style={{ fontWeight: "bold" }}>Nível:</Text> Médio
-              </Text>
-
-              <View style={styles.rulesBox}>
-                <Text style={styles.ruleText}>
-                  • Você deve usar pelo menos um dos materiais: garrafa PET, papelão ou tampinhas.
-                </Text>
-                <Text style={styles.ruleText}>
-                  • Pode combinar outros materiais recicláveis (fitas, colas, tintas…).
-                </Text>
-                <Text style={styles.ruleText}>
-                  • O produto final pode ser um brinquedo, uma mini obra de arte, um recipiente ou algo útil.
-                </Text>
-                <Text style={styles.ruleText}>
-                  • Tire uma foto e envie um pequeno vídeo explicando o que fez.
-                </Text>
+            ) : (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text style={{ color: "#278148", fontWeight: "bold" }}>Concluído</Text>
+                <TouchableOpacity
+                  style={{ backgroundColor: "#FFA500", paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5 }}
+                  onPress={() => router.push(`/avaliar-desafio?id=${d.id}`)}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>Avaliar</Text>
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity style={styles.cardParticiparButton}>
-                <Text style={styles.cardParticiparText}>Participar</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            )}
           </View>
-        )}
+        ))}
+
       </ScrollView>
 
-     {/* --- MENU DAS TRÊS LISTRAS --- */}
-{sideMenuVisible && (
-  <View style={styles.sideMenuOverlay}>
-    <TouchableOpacity style={styles.sideMenuBackground} onPress={closeSideMenu} />
-    <Animated.View
-      style={[styles.sideMenu, { transform: [{ translateX: sideMenuAnim }] }]}
-    >
-      <View style={styles.sideHeader}>
-        <Text style={[styles.sideTitle, { fontSize: 16 }]}>Menu de Atividades</Text>
-        <TouchableOpacity onPress={closeSideMenu}>
-          <MaterialCommunityIcons name="close" size={22} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Chat com a turma */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/chat");
-          closeSideMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="chat" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Chat com a turma</Text>
-      </TouchableOpacity>
-
-      {/* Feed de Notícias */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/noticias");
-          closeSideMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="newspaper" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Feed de Notícias</Text>
-      </TouchableOpacity>
-
-      {/* Mapa */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/mapa");
-          closeSideMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="map" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Mapa</Text>
-      </TouchableOpacity>
-
-      {/* Notificações */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/notificacoes");
-          closeSideMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="bell" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Notificações</Text>
-      </TouchableOpacity>
-
-      {/* Atualizações Futuras */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/atualizacoes");
-          closeSideMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="information" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Atualizações Futuras</Text>
-      </TouchableOpacity>
-
-      {/* Botão Sair */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8, marginTop: 40 }]}
-        onPress={() => {
-          router.push("/login"); // volta para página inicial antes do login
-          closeSideMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="logout" size={20} color="#ff1a1a" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8, color: "#ff1a1a" }]}>
-          Sair
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  </View>
-)}
-
- {/* --- MENU DO AVATAR (LADO ESQUERDO) --- */}
-{profileMenuVisible && (
-  <View style={styles.sideMenuOverlay}>
-    <TouchableOpacity
-      style={styles.sideMenuBackground}
-      onPress={closeProfileMenu}
-    />
-    <Animated.View
-      style={[styles.sideMenu, { transform: [{ translateX: profileMenuAnim }] }]}
-    >
-      <View style={styles.sideHeader}>
-        <Text style={[styles.sideTitle, { fontSize: 16 }]}>Perfil</Text>
-        <TouchableOpacity onPress={closeProfileMenu}>
-          <MaterialCommunityIcons name="close" size={22} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Configurações */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/configuracoes");
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="cog" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Configurações</Text>
-      </TouchableOpacity>
-
-      {/* Central de Contas */}
-      <TouchableOpacity
-        style={[styles.sideItem, { flexDirection: "row", alignItems: "center", paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/central-conta");
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="account" size={20} color="#000" />
-        <View style={{ flexDirection: "column", marginLeft: 8 }}>
-          <Text style={[styles.sideText, { fontSize: 14 }]}>Central de Contas</Text>
-          <Text style={{ fontSize: 10, color: "#555" }}>
-            Senhas, segurança e dados pessoais
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Convidar Amigos */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/convidar-amigos");
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="account-plus" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Convidar Amigos</Text>
-      </TouchableOpacity>
-
-      {/* Favoritos */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/favoritos");
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="star" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Favoritos</Text>
-      </TouchableOpacity>
-
-      {/* Sobre */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/sobre");
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="alert-circle" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Sobre</Text>
-      </TouchableOpacity>
-
-      {/* Linha separadora */}
-      <View
-        style={{
-          height: 1,
-          backgroundColor: "#ccc",
-          marginVertical: 10,
-          width: "100%",
-        }}
-      />
-
-      {/* Entrar e Adicionar Conta */}
-      <Text style={{ marginLeft: 15, marginBottom: 5, fontSize: 13, fontWeight: "bold", color: "#333" }}>
-        Entrar:
-      </Text>
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/adicionar-conta");
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="account-plus" size={20} color="#000" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8 }]}>Adicionar Conta</Text>
-      </TouchableOpacity>
-
-      {/* Botão Sair */}
-      <TouchableOpacity
-        style={[styles.sideItem, { paddingVertical: 8 }]}
-        onPress={() => {
-          router.push("/login"); // Volta para página inicial antes do login
-          closeProfileMenu();
-        }}
-      >
-        <MaterialCommunityIcons name="logout" size={20} color="#ff1a1a" />
-        <Text style={[styles.sideText, { fontSize: 14, marginLeft: 8, color: "#ff1a1a" }]}>
-          Sair
-        </Text>
-      </TouchableOpacity>
-
-      {/* Caixa de pesquisa */}
-      <View style={styles.searchBox}>
-        <MaterialCommunityIcons name="magnify" size={18} color="#000" />
-        <Text style={[styles.searchText, { fontSize: 12 }]}>Pesquisar...</Text>
-      </View>
-    </Animated.View>
-  </View>
-)}
-
+      {sideMenuVisible && <SideMenu router={router} onClose={() => setSideMenuVisible(false)} />}
+      {profileMenuVisible && <ProfileMenu router={router} onClose={() => setProfileMenuVisible(false)} />}
     </View>
   );
 }
 
+// ================= MENU =================
+const MenuItem = ({ icon, label, subtitle, onPress, color }) => (
+  <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", marginBottom: 15 }} onPress={onPress}>
+    <MaterialCommunityIcons name={icon} size={20} color={color || "#000"} />
+    <View style={{ marginLeft: 8 }}>
+      <Text style={{ fontSize: 14, fontWeight: "bold", color: color || "#000" }}>{label}</Text>
+      {subtitle && <Text style={{ fontSize: 10, color: "#555" }}>{subtitle}</Text>}
+    </View>
+  </TouchableOpacity>
+);
+
+const SideMenu = ({ onClose, router }) => (
+  <View style={styles.menuOverlay}>
+    <TouchableOpacity style={styles.menuBackground} onPress={onClose} />
+    <View style={styles.sideMenu}>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}><Text style={styles.closeText}>X</Text></TouchableOpacity>
+      <Text style={styles.menuTitle}>Menu de Atividades</Text>
+      <MenuItem icon="chat" label="Chat com a turma" onPress={() => { router.push("/chat"); onClose(); }} />
+      <MenuItem icon="newspaper" label="Feed de Notícias" onPress={() => { router.push("/noticias"); onClose(); }} />
+      <MenuItem icon="logout" label="Sair" color="#ff1a1a" onPress={() => { router.push("/login"); onClose(); }} />
+    </View>
+  </View>
+);
+
+const ProfileMenu = ({ onClose, router }) => (
+  <View style={styles.menuOverlay}>
+    <TouchableOpacity style={styles.menuBackground} onPress={onClose} />
+    <View style={styles.sideMenu}>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}><Text style={styles.closeText}>X</Text></TouchableOpacity>
+      <Text style={styles.menuTitle}>Configurações e Atividade</Text>
+      <MenuItem icon="account" label="Central de contas" subtitle="Senhas, segurança e dados pessoais" onPress={() => { router.push("/central-conta"); onClose(); }} />
+      <MenuItem icon="star" label="Favoritos" onPress={() => { router.push("/favoritos"); onClose(); }} />
+      <MenuItem icon="alert-circle" label="Sobre" onPress={() => { router.push("/sobre"); onClose(); }} />
+      <Text style={{ marginTop: 10, marginLeft: 10, fontWeight: "bold" }}>Entrar:</Text>
+      <MenuItem icon="logout" label="Sair" color="#ff1a1a" onPress={() => { router.push("/login"); onClose(); }} />
+    </View>
+  </View>
+);
+
+// ================= ESTILOS =================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  scrollContent: { alignItems: "center" },
+  container: { flex: 1, backgroundColor: "#F4F7F5" },
+  scrollContent: { padding: 20 },
   header: {
-    height: 160,
-    width: "100%",
-    borderBottomLeftRadius: 100,
-    borderBottomRightRadius: 100,
-    paddingHorizontal: 20,
+    height: 140,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    paddingHorizontal: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  leftHeader: { flexDirection: "row", alignItems: "center" },
-  rightHeader: { flexDirection: "row", alignItems: "center" },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#278148",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  username: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  pointsText: { color: "#fff", fontSize: 14 },
-  progressBar: {
-    width: 100,
-    height: 6,
-    backgroundColor: "#ddd",
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  progress: { height: "100%", backgroundColor: "#CBF9E0", borderRadius: 10 },
-  menuButton: { padding: 5 },
-  desafioButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "95%",
-    marginTop: 45,
-  },
-  desafioButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: "#000",
-  },
-  desafioButtonText: { fontSize: 12, color: "#000" },
-  desafioSection: { width: "90%", alignItems: "center", marginTop: 20 },
-  sectionTitle: { width: "100%", fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  singleCard: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
     width: "100%",
-    backgroundColor: "#D7F3E3",
-    borderRadius: 20,
-    padding: 15,
-    alignItems: "center",
   },
-  desafioImage: { width: "100%", height: 150, borderRadius: 15, marginBottom: 10 },
-  desafioTitulo: { fontSize: 18, fontWeight: "bold", color: "#000", marginTop: 5 },
-  desafioDescricao: { fontSize: 14, color: "#333", textAlign: "center", marginTop: 5, marginBottom: 10 },
-  botaoParticipar: { backgroundColor: "#95C296", paddingHorizontal: 20, paddingVertical: 8, borderRadius: 30 },
-  botaoParticiparTexto: { color: "#000", fontWeight: "bold" },
-  botaoVerMais: { marginTop: 15, backgroundColor: "#278148", paddingVertical: 10, paddingHorizontal: 25, borderRadius: 25 },
-  botaoVerMaisTexto: { color: "#fff", fontWeight: "bold" },
-  bottomSemiCircle: {
-    width: "100%",
-    height: 100,
-    borderTopLeftRadius: 100,
-    borderTopRightRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 30,
-  },
-  bottomMenu: { flexDirection: "row", justifyContent: "space-around", width: "70%" },
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  overlayTouch: { flex: 1 },
-  bottomCard: {
-    width: "100%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-  },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  cardTitle: { fontSize: 20, fontWeight: "bold", color: "#000" },
-  cardInfo: { marginTop: 5, fontSize: 14, color: "#000" },
-  rulesBox: { marginTop: 15, backgroundColor: "#F5D58A", padding: 15, borderRadius: 12 },
-  ruleText: { marginBottom: 8, fontSize: 14, color: "#000" },
-  cardParticiparButton: { marginTop: 20, backgroundColor: "#278148", paddingVertical: 12, borderRadius: 25, alignItems: "center" },
-  cardParticiparText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  headerContent: { flexDirection: "row", alignItems: "center" },
+  avatar: { width: 60, height: 60, borderRadius: 30 },
+  username: { fontSize: 20, color: "#fff", fontWeight: "bold" },
+  pointsText: { color: "#fff", marginTop: 4 },
+  progressBarContainer: { marginTop: 10 },
+  progressBarBackground: { height: 18, width: "100%", backgroundColor: "#ffffff33", borderRadius: 12, overflow: "hidden" },
+  progressBarFill: { height: "100%", backgroundColor: "#A7FFD2", borderRadius: 12 },
+  progressPercentage: { marginTop: 5, color: "#fff", fontWeight: "bold", textAlign: "right" },
+  cardsContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginTop: 25 },
+  card: { width: "48%", backgroundColor: "#FFFFFF", padding: 17, borderRadius: 14, marginBottom: 15, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 4.5, elevation: 4 },
+  cardTitle: { fontSize: 14, fontWeight: "bold", color: "#2E6A45" },
+  cardValue: { fontSize: 22, fontWeight: "bold", marginTop: 6, color: "#278148", textShadowColor: "#00000020", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 15, color: "#278148" },
+  listaDesafio: { backgroundColor: "#FFFFFF", padding: 15, marginVertical: 8, borderRadius: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 4.5, elevation: 4 },
+  menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
+  menuBackground: { flex: 1, backgroundColor: "#00000055" },
+  sideMenu: { top: 0, right: 0, width: "20%", height: "100%", backgroundColor: "#fff", padding: 20, elevation: 8, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  closeButton: { alignSelf: "flex-end", padding: 5 },
+  closeText: { fontSize: 16, fontWeight: "bold" },
+  menuTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15 },
+  quickAccessContainer: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginVertical: 20,
+},
 
-  sideMenuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  sideMenuBackground: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
-  sideMenu: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 250,
-    backgroundColor: "#fff",
-    padding: 20,
-  },
-  sideHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  sideTitle: { fontSize: 20, fontWeight: "bold" },
-  sideItem: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
-  sideText: { marginLeft: 10, fontSize: 16 },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 25,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 20,
-  },
-  searchText: { marginLeft: 5, color: "#888" },
+quickButton: {
+  flex: 1,
+  backgroundColor: "#4CAF50",
+  paddingVertical: 15,
+  marginHorizontal: 5,
+  borderRadius: 14,
+  alignItems: "center",
+  justifyContent: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.25,
+  shadowRadius: 4.65,
+  elevation: 6,
+},
+
+quickButtonText: {
+  color: "#fff",
+  fontWeight: "bold",
+  fontSize: 16,
+},
+
 });
