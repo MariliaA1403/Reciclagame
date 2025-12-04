@@ -9,12 +9,14 @@ import {
   Alert,
   Image,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const API_URL = "https://backend-reciclagame.vercel.app";
+const screenWidth = Dimensions.get("window").width;
 
 export default function AvaliarDesafio() {
   const { id } = useLocalSearchParams();
@@ -31,9 +33,9 @@ export default function AvaliarDesafio() {
   const [showCard, setShowCard] = useState(false);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
 
-  // ======================================================
-  // FUNÇÃO → BUSCAR USUÁRIO + PONTOS ATUALIZADOS (MESMA DAS OUTRAS TELAS)
-  // ======================================================
+  // ========================
+  // BUSCAR USUÁRIO + PONTOS
+  // ========================
   async function loadUserAndPontos() {
     const raw = await AsyncStorage.getItem("user");
     if (!raw) return;
@@ -72,14 +74,10 @@ export default function AvaliarDesafio() {
     }, [])
   );
 
-  // ================================
-  // Buscar avaliação existente
-  // ================================
   const buscarAvaliacaoExistente = async (jogadorId) => {
     try {
       const res = await fetch(`${API_URL}/api/avaliacoes/get/${jogadorId}/${id}`);
       const data = await res.json();
-
       if (data.success && data.avaliacao) {
         setNota(data.avaliacao.nota);
         setComentario(data.avaliacao.comentario || "");
@@ -89,23 +87,16 @@ export default function AvaliarDesafio() {
     }
   };
 
-  // ================================
-  // Buscar favorito
-  // ================================
   const buscarFavoritoExistente = async (jogadorId) => {
     try {
       const res = await fetch(`${API_URL}/api/favoritos/${jogadorId}`);
       const data = await res.json();
-
       if (data.desafios?.some((d) => d.id == id)) setFavorito(true);
     } catch (error) {
       console.log("Erro ao buscar favorito:", error);
     }
   };
 
-  // ================================
-  // FAVORITAR / DESFAVORITAR
-  // ================================
   const toggleFavorito = async () => {
     try {
       if (!favorito) {
@@ -128,9 +119,6 @@ export default function AvaliarDesafio() {
     }
   };
 
-  // ================================
-  // ENVIAR AVALIAÇÃO
-  // ================================
   const enviarAvaliacao = async () => {
     if (nota === 0) return Alert.alert("Aviso", "Dê uma nota de 1 a 5.");
 
@@ -145,7 +133,6 @@ export default function AvaliarDesafio() {
       if (!data.success) throw new Error(data.message);
 
       setShowCard(true);
-
     } catch (error) {
       Alert.alert("Erro", "Não foi possível enviar a avaliação.");
     }
@@ -160,29 +147,27 @@ export default function AvaliarDesafio() {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#F6F9FC" }}>
       {/* HEADER */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.userInfo} onPress={() => setSideMenuVisible(true)}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => setSideMenuVisible(true)}>
           {avatar ? (
             <Image source={{ uri: avatar }} style={styles.avatar} />
           ) : (
             <MaterialCommunityIcons name="account-circle" size={60} color="#4CAF50" />
           )}
-
-          <View style={{ marginLeft: 12 }}>
-            <Text style={styles.username}>{user.nome}</Text>
-            <Text style={styles.pointsText}>{user.pontos} pontos</Text>
-          </View>
         </TouchableOpacity>
+
+        <View style={{ marginLeft: 12, flex: 1 }}>
+          <Text style={styles.username}>{user.nome}</Text>
+          <Text style={styles.pointsText}>{user.pontos} pontos</Text>
+        </View>
       </View>
 
+      {/* CONTEÚDO */}
       <ScrollView contentContainerStyle={styles.container}>
-
         <TouchableOpacity onPress={toggleFavorito} style={styles.favoriteBtn}>
-          <Text style={styles.favoriteText}>
-            {favorito ? "❤️ Favorito" : "🤍 Favoritar"}
-          </Text>
+          <Text style={styles.favoriteText}>{favorito ? "❤️ Favorito" : "🤍 Favoritar"}</Text>
         </TouchableOpacity>
 
         <View style={styles.starContainer}>
@@ -195,7 +180,7 @@ export default function AvaliarDesafio() {
           placeholder="Comentário (opcional)"
           value={comentario}
           onChangeText={setComentario}
-          style={[styles.input, { height: 100 }]}
+          style={[styles.input, { height: 120 }]}
           multiline
         />
 
@@ -229,18 +214,18 @@ export default function AvaliarDesafio() {
   );
 }
 
-// ===================== MENU =====================
+// ================= MENU =================
 const MenuItem = ({ icon, label, onPress }) => (
-  <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", marginBottom: 15 }} onPress={onPress}>
-    <MaterialCommunityIcons name={icon} size={20} color="#000" />
-    <Text style={{ marginLeft: 10, fontWeight: "bold", fontSize: 14 }}>{label}</Text>
+  <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", marginBottom: 18 }} onPress={onPress}>
+    <MaterialCommunityIcons name={icon} size={22} color="#000" />
+    <Text style={{ marginLeft: 10, fontWeight: "bold", fontSize: 15 }}>{label}</Text>
   </TouchableOpacity>
 );
 
 const SideMenu = ({ onClose, router }) => (
   <View style={styles.menuOverlay}>
     <TouchableOpacity style={styles.menuBackground} onPress={onClose} />
-    <View style={styles.sideMenu}>
+    <View style={[styles.sideMenu, { width: screenWidth * 0.75 }]}>
       <TouchableOpacity style={styles.closeButton} onPress={onClose}>
         <Text style={styles.closeText}>X</Text>
       </TouchableOpacity>
@@ -255,68 +240,63 @@ const SideMenu = ({ onClose, router }) => (
   </View>
 );
 
-// ===================== ESTILOS =====================
+// ================= ESTILOS =================
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#F4F7F5" },
+  container: { flexGrow: 1, padding: 20 },
 
-  headerContainer: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
-    backgroundColor: "#fff",
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    elevation: 3,
+    paddingHorizontal: 22,
+    paddingTop: 40,
+    paddingBottom: 20,
+    backgroundColor: "#C9DFC9",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 5,
+    zIndex: 1,
   },
-  userInfo: { flexDirection: "row", alignItems: "center" },
   avatar: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, borderColor: "#4CAF50" },
 
-  username: { fontSize: 18, fontWeight: "bold" },
-  pointsText: { marginTop: 4 },
+  username: { fontSize: 18, fontWeight: "bold", color: "#fff" },
+  pointsText: { color: "#fff", marginTop: 4 },
 
   favoriteBtn: { alignSelf: "flex-end", marginBottom: 20 },
   favoriteText: { fontSize: 18 },
 
   starContainer: { flexDirection: "row", justifyContent: "center", marginBottom: 20 },
-  starFilled: { fontSize: 40, color: "#FFD700", marginHorizontal: 5 },
-  starEmpty: { fontSize: 40, color: "#ccc", marginHorizontal: 5 },
+  starFilled: { fontSize: 40, color: "#FFD700", marginHorizontal: 6 },
+  starEmpty: { fontSize: 40, color: "#ccc", marginHorizontal: 6 },
 
-  input: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
+  input: { backgroundColor: "#fff", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#ccc" },
 
-  button: {
-    backgroundColor: "#FF8C00",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  button: { backgroundColor: "#4CAF50", padding: 16, borderRadius: 12, alignItems: "center", marginTop: 15 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 17 },
 
   modalBackground: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
   modalContainer: { width: "80%", backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center" },
-
   modalTitle: { fontSize: 22, fontWeight: "bold" },
   modalText: { fontSize: 16, marginVertical: 5 },
-
-  modalButton: { backgroundColor: "#FF8C00", padding: 12, borderRadius: 8, marginTop: 10 },
+  modalButton: { backgroundColor: "#4CAF50", padding: 14, borderRadius: 10, marginTop: 10 },
   modalButtonText: { color: "#fff", fontWeight: "bold" },
 
-  menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)" },
-  menuBackground: { flex: 1 },
+  menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
+  menuBackground: { flex: 1, backgroundColor: "#00000055" },
   sideMenu: {
     position: "absolute",
     top: 0,
     bottom: 0,
-    width: 280,
-    backgroundColor: "#FFF",
+    backgroundColor: "#fff",
     padding: 25,
     elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   menuTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 22, color: "#278148" },
   closeButton: { position: "absolute", top: 12, right: 12 },

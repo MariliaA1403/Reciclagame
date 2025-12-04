@@ -12,7 +12,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const API_URL = "https://backend-reciclagame.vercel.app/";
+const API_URL = "https://backend-reciclagame.vercel.app";
 
 export default function Sobre() {
   const router = useRouter();
@@ -53,10 +53,10 @@ export default function Sobre() {
     }, [])
   );
 
-  if (!user) return <Text>Carregando...</Text>;
+  if (!user) return <Text style={{ flex: 1, textAlign: "center", marginTop: 50 }}>Carregando...</Text>;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       {/* ====== HEADER ====== */}
       <LinearGradient
         colors={["#C9DFC9", "#95C296"]}
@@ -177,6 +177,10 @@ const MenuItem = ({ icon, label, onPress }) => (
 
 // ================= ESTILOS =================
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F9F9F9", // fundo branco para a tela
+  },
   header: {
     height: 150,
     borderBottomLeftRadius: 40,

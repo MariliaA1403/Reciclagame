@@ -253,7 +253,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 40,
-    elevation: 6,
+    elevation: 8, // sombra Android
+    shadowColor: "#000", // sombra iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
     zIndex: 10,
   },
   userInfo: { flexDirection: "row", alignItems: "center" },
@@ -281,6 +285,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "#A5D6A7",
+    // SOMBRA
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
   },
   completedTitle: {
     fontSize: 22,
@@ -295,9 +305,32 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  questionCard: { backgroundColor: "#E0F0FF", borderRadius: 12, padding: 15, marginBottom: 15 },
+  questionCard: { 
+    backgroundColor: "#E0F0FF", 
+    borderRadius: 12, 
+    padding: 15, 
+    marginBottom: 15,
+    // SOMBRA
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   questionText: { fontSize: 16, marginBottom: 10 },
-  optionButton: { backgroundColor: "#CFE6FF", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 15, marginBottom: 8 },
+  optionButton: { 
+    backgroundColor: "#CFE6FF", 
+    borderRadius: 10, 
+    paddingVertical: 10, 
+    paddingHorizontal: 15, 
+    marginBottom: 8,
+    // SOMBRA LEVE
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   selectedOption: { backgroundColor: "#80C1FF" },
   optionText: { fontSize: 16 },
 
@@ -312,4 +345,3 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 15, color: "#278148" },
   modalText: { fontSize: 18, marginBottom: 10 },
 });
-

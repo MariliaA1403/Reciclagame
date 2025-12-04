@@ -115,6 +115,7 @@ export default function ParticiparDesafio() {
       <View style={styles.sideMenu}>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}><Text style={styles.closeText}>X</Text></TouchableOpacity>
         <Text style={styles.menuTitle}>Menu de Atividades</Text>
+        <MenuItem icon="home" label="Home" onPress={() => { router.push("/home"); onClose(); }} />
         <MenuItem icon="chat" label="Chat com a turma" onPress={() => { router.push("/chat"); onClose(); }} />
         <MenuItem icon="newspaper" label="Feed de Notícias" onPress={() => { router.push("/noticias"); onClose(); }} />
         <MenuItem icon="logout" label="Sair" color="#ff1a1a" onPress={() => { router.push("/login"); onClose(); }} />
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 17 },
   menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
   menuBackground: { flex: 1, backgroundColor: "#00000055" },
-  sideMenu: { top: 0, right: 0, width: "20%", height: "100%", backgroundColor: "#fff", padding: 20, elevation: 8, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  sideMenu: { top: 0, right: 0, width: "55%", height: "100%", backgroundColor: "#fff", padding: 20, elevation: 8, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 8 },
   closeButton: { alignSelf: "flex-end", padding: 5 },
   closeText: { fontSize: 16, fontWeight: "bold" },
   menuTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15 },

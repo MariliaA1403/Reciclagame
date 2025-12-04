@@ -46,7 +46,7 @@ export default function QuizStartScreen() {
   }
 
   // -----------------------------------------
-  // ATUALIZA QUANDO A TELA GANHA FOCO (igual às outras páginas)
+  // ATUALIZA QUANDO A TELA GANHA FOCO
   // -----------------------------------------
   useFocusEffect(
     useCallback(() => {
@@ -78,9 +78,13 @@ export default function QuizStartScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-
       {/* HEADER */}
-      <LinearGradient colors={["#C9DFC9", "#95C296"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+      <LinearGradient
+        colors={["#C9DFC9", "#95C296"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity style={styles.userInfo} onPress={() => setSideMenuVisible(true)}>
           {user.avatar_url ? (
             <Image source={{ uri: `${API_URL}${user.avatar_url}` }} style={styles.avatar} />
@@ -161,26 +165,43 @@ const SideMenu = ({ onClose, router }) => (
 // ================================================
 const styles = StyleSheet.create({
   header: {
-    height: 140,
+    height: 160,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 40,
+    // SOMBRA
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8, // Android
   },
   userInfo: { flexDirection: "row", alignItems: "center" },
   avatar: { width: 60, height: 60, borderRadius: 30 },
   username: { fontSize: 20, color: "#fff", fontWeight: "bold" },
   pointsText: { color: "#fff", marginTop: 4 },
 
-  scroll: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    marginTop: -50, // sobreposição do card sobre o header
+  },
   card: {
     width: "100%",
     backgroundColor: "#fff",
     borderRadius: 25,
     padding: 30,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   title: { fontSize: 28, fontWeight: "bold", color: "#278148", marginBottom: 25, textAlign: "center" },
