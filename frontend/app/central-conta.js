@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +20,7 @@ export default function CentralConta() {
   const [endereco, setEndereco] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -41,25 +43,46 @@ export default function CentralConta() {
   }, []);
 
   const updateUser = async () => {
+    if (!user || loading) return;
+
+    setLoading(true);
     try {
       const payload = { nome, email, telefone, endereco };
-      const res = await fetch(`https://backend-reciclagame.vercel.app/jogadores/${user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      console.log("Enviando atualização:", payload);
+
+      const res = await fetch(
+        `https://backend-reciclagame.vercel.app/jogadores/${user.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const status = res.status;
+      const text = await res.text();
+      console.log("Status:", status, "Resposta:", text);
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { success: false, message: "Resposta inválida do servidor" };
+      }
+
       if (data.success) {
         Alert.alert("Sucesso", "Dados atualizados!");
         setUser(data.jogador);
         await AsyncStorage.setItem("user", JSON.stringify(data.jogador));
         setEditMode(false);
       } else {
-        Alert.alert("Erro", "Não foi possível atualizar os dados.");
+        Alert.alert("Erro", data.message || "Não foi possível atualizar os dados.");
       }
     } catch (err) {
       console.error(err);
       Alert.alert("Erro", "Erro ao atualizar usuário.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,6 +123,7 @@ export default function CentralConta() {
       <TouchableOpacity
         style={editMode ? styles.saveButton : styles.editButton}
         onPress={editMode ? updateUser : () => setEditMode(true)}
+        disabled={loading}
       >
         <Text style={styles.buttonText}>{editMode ? "Salvar" : "Editar Informações"}</Text>
       </TouchableOpacity>

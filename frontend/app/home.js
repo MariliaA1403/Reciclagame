@@ -344,7 +344,7 @@ const SideMenu = ({ onClose, router }) => (
 const ProfileMenu = ({ onClose, router }) => (
   <View style={styles.menuOverlay}>
     <TouchableOpacity style={styles.menuBackground} onPress={onClose} />
-    <View style={styles.sideMenu}>
+    <View style={styles.profileMenu}>
       <TouchableOpacity style={styles.closeButton} onPress={onClose}><Text style={styles.closeText}>X</Text></TouchableOpacity>
       <Text style={styles.menuTitle}>Configurações e Atividade</Text>
       <MenuItem icon="account" label="Central de contas" subtitle="Senhas, segurança e dados pessoais" onPress={() => { router.push("/central-conta"); onClose(); }} />
@@ -391,7 +391,8 @@ const styles = StyleSheet.create({
   listaDesafio: { backgroundColor: "#FFFFFF", padding: 15, marginVertical: 8, borderRadius: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 4.5, elevation: 4 },
   menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
   menuBackground: { flex: 1, backgroundColor: "#00000055" },
-  sideMenu: { top: 0, right: 0, width: "20%", height: "100%", backgroundColor: "#fff", padding: 20, elevation: 8, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  sideMenu: { top: 0, right: 0, width: "55%", height: "100%", backgroundColor: "#fff", padding: 20, elevation: 8, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  profileMenu: { top: 0, right: 0, width: "50%", height: "100%", backgroundColor: "#fff", padding: 20, elevation: 8, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 8 },
   closeButton: { alignSelf: "flex-end", padding: 5 },
   closeText: { fontSize: 16, fontWeight: "bold" },
   menuTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15 },

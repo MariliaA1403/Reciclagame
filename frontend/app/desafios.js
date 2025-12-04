@@ -241,7 +241,6 @@ const ProfileMenu = ({ onClose, router }) => (
         <MenuItem icon="star" label="Favoritos" onPress={() => { router.push("/favoritos"); onClose(); }} />
         <MenuItem icon="alert-circle" label="Sobre" onPress={() => { router.push("/sobre"); onClose(); }} />
         <Text style={{ marginTop: 10, marginLeft: 10, fontWeight: "bold" }}>Entrar:</Text>
-        <MenuItem icon="account-plus" label="Adicionar Conta" onPress={() => { router.push("/adicionar-conta"); onClose(); }} />
         <MenuItem icon="logout" label="Sair" color="#ff1a1a" onPress={() => { router.push("/login"); onClose(); }} />
       </ScrollView>
     </View>

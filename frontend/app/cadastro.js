@@ -31,12 +31,14 @@ export default function Cadastro() {
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Lista de instituições
   const [instituicoesList, setInstituicoesList] = useState([]);
   const [selectedInstitutionId, setSelectedInstitutionId] = useState('');
 
-  // 🔧 LISTA DE INSTITUIÇÕES (CORRIGIDO)
+  // =============================
+  // 🔧 LISTA DE INSTITUIÇÕES — FUNCIONAL
+  // =============================
   useEffect(() => {
     const fetchInstituicoes = async () => {
       try {
@@ -45,7 +47,6 @@ export default function Cadastro() {
 
         let lista = [];
 
-        // Aceita qualquer formato de retorno do backend
         if (Array.isArray(data)) {
           lista = data;
         } else if (Array.isArray(data.instituicoes)) {
@@ -54,18 +55,18 @@ export default function Cadastro() {
           lista = data.data;
         }
 
-        // Ordena por nome (não afeta o backend)
-        lista.sort((a, b) => a.nome.localeCompare(b.nome));
-
+        lista.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         setInstituicoesList(lista);
+
       } catch (err) {
-        console.log("Erro ao carregar instituições:", err);
+        console.log("❌ Erro ao carregar instituições:", err);
       }
     };
 
     fetchInstituicoes();
   }, []);
 
+  // Função para envio
   const handleRegister = async () => {
     setErrorMessage('');
     if (!selectedType) {
@@ -80,12 +81,12 @@ export default function Cadastro() {
       if (!userName) camposFaltando.push("Nome");
       if (!userEmail) camposFaltando.push("Email");
       if (!matricula) camposFaltando.push("Matrícula");
-      if (!birthDate) camposFaltando.push("Data de Nascimento");
+      if (!birthDate) camposFaltando.push("Data de nascimento");
       if (!phone) camposFaltando.push("Telefone");
       if (!address) camposFaltando.push("Endereço");
       if (!selectedInstitutionId) camposFaltando.push("Instituição");
       if (!password) camposFaltando.push("Senha");
-      if (!confirmPassword) camposFaltando.push("Confirmação de Senha");
+      if (!confirmPassword) camposFaltando.push("Confirmação de senha");
 
       if (camposFaltando.length > 0) {
         setErrorMessage("Preencha todos os campos obrigatórios: " + camposFaltando.join(", "));
@@ -98,6 +99,7 @@ export default function Cadastro() {
       }
 
       let formattedDate = birthDate;
+
       if (birthDate.includes('/')) {
         const parts = birthDate.split('/');
         formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -117,13 +119,13 @@ export default function Cadastro() {
     }
 
     if (selectedType === "instituicao") {
-      if (!institutionName) camposFaltando.push("Nome da Instituição");
+      if (!institutionName) camposFaltando.push("Nome da instituição");
       if (!cnpj) camposFaltando.push("CNPJ");
       if (!institutionEmail) camposFaltando.push("Email");
       if (!institutionPhone) camposFaltando.push("Telefone");
       if (!institutionAddress) camposFaltando.push("Endereço");
       if (!institutionPassword) camposFaltando.push("Senha");
-      if (!institutionConfirmPassword) camposFaltando.push("Confirmação de Senha");
+      if (!institutionConfirmPassword) camposFaltando.push("Confirmação de senha");
 
       if (camposFaltando.length > 0) {
         setErrorMessage("Preencha todos os campos obrigatórios: " + camposFaltando.join(", "));
@@ -188,8 +190,7 @@ export default function Cadastro() {
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
-
-      {/* ===== BOTÃO DE VOLTAR ===== */}
+      
       <Pressable style={styles.voltarButton} onPress={() => router.push('/login')}>
         <Text style={styles.voltarText}>← Voltar</Text>
       </Pressable>
@@ -200,17 +201,20 @@ export default function Cadastro() {
           style={styles.logo}
           resizeMode="contain"
         />
+
         <Text style={styles.welcome}>Bem-vindo(a) ao ReciclaGame!</Text>
 
         {errorMessage ? (
           <Text style={{ color: 'red', marginBottom: 10, textAlign: 'center' }}>{errorMessage}</Text>
         ) : null}
 
+        {/* Tipo */}
         <View style={styles.typeContainer}>
           <View style={styles.typeLabelContainer}>
             <Text style={styles.typeLabel}>Você é Instituição ou Jogador?</Text>
             <Text style={styles.requiredStar}>*</Text>
           </View>
+
           <View style={styles.radioContainer}>
             <Pressable style={styles.radioOption} onPress={() => setSelectedType('instituicao')}>
               <View style={styles.radioCircle}>
@@ -218,6 +222,7 @@ export default function Cadastro() {
               </View>
               <Text style={styles.radioText}>Instituição</Text>
             </Pressable>
+
             <Pressable style={styles.radioOption} onPress={() => setSelectedType('jogador')}>
               <View style={styles.radioCircle}>
                 {selectedType === 'jogador' && <View style={styles.radioSelected} />}
@@ -227,6 +232,7 @@ export default function Cadastro() {
           </View>
         </View>
 
+        {/* Jogador */}
         {selectedType === 'jogador' && (
           <>
             {renderField("Digite seu nome completo", userName, setUserName)}
@@ -236,26 +242,44 @@ export default function Cadastro() {
             {renderField("Digite seu telefone / WhatsApp", phone, setPhone)}
             {renderField("Digite seu endereço", address, setAddress)}
 
-            {/* 🔧 PICKER DE INSTITUIÇÕES AJUSTADO */}
-            <View style={{ width: '100%', marginBottom: 20 }}>
-              <Text style={{ marginBottom: 5 }}>Selecione sua instituição *</Text>
-              <Picker
-                selectedValue={selectedInstitutionId}
-                onValueChange={(itemValue) => setSelectedInstitutionId(itemValue)}
-                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 10 }}
-              >
-                <Picker.Item label="Selecione..." value="" />
-                {instituicoesList.map(inst => (
-                  <Picker.Item key={inst.id} label={inst.nome} value={inst.id} />
-                ))}
-              </Picker>
-            </View>
+          {/* Lista de Instituições como botões */}
+<View style={{ width: "100%", marginBottom: 20 }}>
+  <Text style={{ marginBottom: 10, fontSize: 15 }}>
+    Selecione sua instituição *
+  </Text>
+
+  {instituicoesList.length === 0 ? (
+    <Text style={{ color: "red" }}>Carregando instituições...</Text>
+  ) : (
+    instituicoesList.map((inst) => (
+      <Pressable
+        key={inst.id}
+        onPress={() => setSelectedInstitutionId(inst.id)}
+        style={[
+          styles.instButton,
+          selectedInstitutionId === inst.id && styles.instButtonSelected
+        ]}
+      >
+        <Text
+          style={[
+            styles.instButtonText,
+            selectedInstitutionId === inst.id && styles.instButtonTextSelected
+          ]}
+        >
+          {inst.nome}
+        </Text>
+      </Pressable>
+    ))
+  )}
+</View>
+
 
             {renderField("Crie uma senha", password, setPassword, true)}
             {renderField("Confirme a senha", confirmPassword, setConfirmPassword, true)}
           </>
         )}
 
+        {/* Instituição */}
         {selectedType === 'instituicao' && (
           <>
             {renderField("Digite o nome da instituição", institutionName, setInstitutionName)}
@@ -275,6 +299,7 @@ export default function Cadastro() {
         <Pressable onPress={() => router.push('/login')}>
           <Text style={styles.loginText}>Já tem uma conta? Faça login</Text>
         </Pressable>
+
       </View>
     </ScrollView>
   );
@@ -283,13 +308,12 @@ export default function Cadastro() {
 const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, backgroundColor: '#fff', alignItems: 'center' },
   container: { width: '90%', alignItems: 'center', padding: 20 },
-  logo: { width: 200, height: 200, marginBottom: 20, shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4 },
+  logo: { width: 200, height: 200, marginBottom: 20 },
   welcome: { fontSize: 22, fontWeight: 'bold', marginBottom: 25 },
   requiredContainer: { flexDirection: 'row', alignItems: 'center', marginLeft: 5, marginBottom: 3 },
   requiredText: { fontSize: 12, color: '#000', fontStyle: 'italic' },
   requiredStar: { fontSize: 14, color: 'red', marginLeft: 3 },
-  input: { width: '100%', borderWidth: 1, borderColor: '#ccc', backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 20 },
+  input: { width: '100%', borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 10, marginBottom: 20 },
   typeContainer: { width: '100%', marginBottom: 20 },
   typeLabelContainer: { flexDirection: 'row', marginLeft: 5, marginBottom: 8 },
   typeLabel: { fontSize: 13, fontWeight: '500' },
@@ -303,4 +327,31 @@ const styles = StyleSheet.create({
   loginText: { marginTop: 20, color: '#28a745', fontSize: 14, fontStyle: 'italic' },
   voltarButton: { alignSelf: 'flex-start', marginBottom: 15, padding:20 },
   voltarText: { color: '#28a745', fontSize: 16, fontWeight: 'bold' },
+  instButton: {
+  padding: 12,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: "#ccc",
+  backgroundColor: "#f5f5f5",
+  marginBottom: 10,
+},
+
+instButtonSelected: {
+  backgroundColor: "#28a745",
+  borderColor: "#1e7e34",
+},
+
+instButtonText: {
+  fontSize: 15,
+  color: "#333",
+  textAlign: "center",
+},
+
+instButtonTextSelected: {
+  color: "#fff",
+  fontWeight: "bold",
+},
+
 });
+
+
