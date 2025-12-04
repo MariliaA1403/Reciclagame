@@ -32,18 +32,38 @@ export default function Cadastro() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-
-  // Lista de instituições para o Picker
+  // Lista de instituições
   const [instituicoesList, setInstituicoesList] = useState([]);
   const [selectedInstitutionId, setSelectedInstitutionId] = useState('');
 
+  // 🔧 LISTA DE INSTITUIÇÕES (CORRIGIDO)
   useEffect(() => {
-    fetch(`${API_URL}/api/instituicoes`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setInstituicoesList(data.instituicoes);
-      })
-      .catch(err => console.log(err));
+    const fetchInstituicoes = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/instituicoes`);
+        const data = await res.json();
+
+        let lista = [];
+
+        // Aceita qualquer formato de retorno do backend
+        if (Array.isArray(data)) {
+          lista = data;
+        } else if (Array.isArray(data.instituicoes)) {
+          lista = data.instituicoes;
+        } else if (Array.isArray(data.data)) {
+          lista = data.data;
+        }
+
+        // Ordena por nome (não afeta o backend)
+        lista.sort((a, b) => a.nome.localeCompare(b.nome));
+
+        setInstituicoesList(lista);
+      } catch (err) {
+        console.log("Erro ao carregar instituições:", err);
+      }
+    };
+
+    fetchInstituicoes();
   }, []);
 
   const handleRegister = async () => {
@@ -77,7 +97,6 @@ export default function Cadastro() {
         return;
       }
 
-      // --- Converte a data de DD/MM/YYYY para YYYY-MM-DD ---
       let formattedDate = birthDate;
       if (birthDate.includes('/')) {
         const parts = birthDate.split('/');
@@ -171,9 +190,9 @@ export default function Cadastro() {
     <ScrollView contentContainerStyle={styles.scrollContainer}>
 
       {/* ===== BOTÃO DE VOLTAR ===== */}
-<Pressable style={styles.voltarButton} onPress={() => router.push('/login')}>
-  <Text style={styles.voltarText}>← Voltar</Text>
-</Pressable>
+      <Pressable style={styles.voltarButton} onPress={() => router.push('/login')}>
+        <Text style={styles.voltarText}>← Voltar</Text>
+      </Pressable>
 
       <View style={styles.container}>
         <Image
@@ -217,6 +236,7 @@ export default function Cadastro() {
             {renderField("Digite seu telefone / WhatsApp", phone, setPhone)}
             {renderField("Digite seu endereço", address, setAddress)}
 
+            {/* 🔧 PICKER DE INSTITUIÇÕES AJUSTADO */}
             <View style={{ width: '100%', marginBottom: 20 }}>
               <Text style={{ marginBottom: 5 }}>Selecione sua instituição *</Text>
               <Picker
@@ -230,7 +250,6 @@ export default function Cadastro() {
                 ))}
               </Picker>
             </View>
-            
 
             {renderField("Crie uma senha", password, setPassword, true)}
             {renderField("Confirme a senha", confirmPassword, setConfirmPassword, true)}
@@ -264,8 +283,8 @@ export default function Cadastro() {
 const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, backgroundColor: '#fff', alignItems: 'center' },
   container: { width: '90%', alignItems: 'center', padding: 20 },
-  logo: { width: 200, height: 200, marginBottom: 10,  marginBottom: 20, shadowColor: "#000",
-  shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4, },
+  logo: { width: 200, height: 200, marginBottom: 20, shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4 },
   welcome: { fontSize: 22, fontWeight: 'bold', marginBottom: 25 },
   requiredContainer: { flexDirection: 'row', alignItems: 'center', marginLeft: 5, marginBottom: 3 },
   requiredText: { fontSize: 12, color: '#000', fontStyle: 'italic' },
@@ -282,7 +301,6 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#28a745', width: '100%', padding: 15, borderRadius: 8, marginTop: 10, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   loginText: { marginTop: 20, color: '#28a745', fontSize: 14, fontStyle: 'italic' },
-  voltarButton: { alignSelf: 'flex-start', marginBottom: 15, padding:20},
-voltarText: {color: '#28a745', fontSize: 16, fontWeight: '500',  fontWeight: 'bold'},
+  voltarButton: { alignSelf: 'flex-start', marginBottom: 15, padding:20 },
+  voltarText: { color: '#28a745', fontSize: 16, fontWeight: 'bold' },
 });
- 

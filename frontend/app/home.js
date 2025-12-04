@@ -19,9 +19,10 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 
+// ====== CORES GRADIENT ======
 const GRADIENT_COLORS = ["#C9DFC9", "#95C296"];
 
-export default function HomeScreen() {
+export default function Home() {
   const router = useRouter();
   const [fontsLoaded] = useFonts({ JockeyOne_400Regular });
   const [user, setUser] = useState({ id: null, nome: "Usuário", pontos: 0, levelProgress: 0, avatar_url: null });
@@ -40,40 +41,36 @@ export default function HomeScreen() {
     return () => subscription?.remove();
   }, []);
 
-  
   // ====== LOAD USER E PONTOS ======
-useEffect(() => {
-  async function loadUserAndPontos() {
-    const raw = await AsyncStorage.getItem("user");
-    if (!raw) return;
+  useEffect(() => {
+    async function loadUserAndPontos() {
+      const raw = await AsyncStorage.getItem("user");
+      if (!raw) return;
 
-    const parsed = JSON.parse(raw);
-    const userId = parsed.id;
+      const parsed = JSON.parse(raw);
+      const userId = parsed.id;
 
-    try {
-      // 1️⃣ Buscar dados do jogador
-      const userRes = await fetch(`${API_URL}/api/jogadores/${userId}`);
-      const userData = await userRes.json();
+      try {
+        const userRes = await fetch(`${API_URL}/api/jogadores/${userId}`);
+        const userData = await userRes.json();
 
-      // 2️⃣ Buscar pontos totais (desafios + quizzes)
-      const pontosRes = await fetch(`${API_URL}/api/jogadores/${userId}/pontos-total`);
-      const pontosData = await pontosRes.json();
+        const pontosRes = await fetch(`${API_URL}/api/jogadores/${userId}/pontos-total`);
+        const pontosData = await pontosRes.json();
 
-      setUser({
-        id: userId,
-        nome: userData.nome || "Usuário",
-        pontos: pontosData.success ? pontosData.totalFinal : 0,
-        levelProgress: 0, // calcularemos depois com desafios
-        avatar_url: userData.avatar_url || null,
-      });
-    } catch (err) {
-      console.error("Erro ao carregar usuário e pontos:", err);
+        setUser({
+          id: userId,
+          nome: userData.nome || "Usuário",
+          pontos: pontosData.success ? pontosData.totalFinal : 0,
+          levelProgress: 0,
+          avatar_url: userData.avatar_url || null,
+        });
+      } catch (err) {
+        console.error("Erro ao carregar usuário e pontos:", err);
+      }
     }
-  }
 
-  loadUserAndPontos();
-}, []);
-
+    loadUserAndPontos();
+  }, []);
 
   // ====== LOAD DESAFIOS ======
   useEffect(() => {
@@ -86,12 +83,7 @@ useEffect(() => {
         if (data.success) {
           const desafiosAtualizados = data.desafios.map(d => ({ ...d, concluido: d.concluido }));
           setDesafios(desafiosAtualizados);
-
-         setUser(prev => ({
-  ...prev,
-  levelProgress: calculateProgress(desafiosAtualizados)
-}));
-
+          setUser(prev => ({ ...prev, levelProgress: calculateProgress(desafiosAtualizados) }));
         }
       } catch (err) {
         console.error("Erro ao carregar desafios:", err);
@@ -105,14 +97,13 @@ useEffect(() => {
 
   if (!fontsLoaded) return null;
 
-  // ====== FUNÇÃO DE PROGRESSO ======
+  // ====== FUNÇÕES ======
   function calculateProgress(listaDesafios) {
     const total = listaDesafios.length || 1;
     const concluido = listaDesafios.filter(d => d.concluido).length;
     return (concluido / total) * 100;
   }
 
-  // ====== CONCLUIR DESAFIO ======
   async function handleConcluirDesafio(desafio) {
     if (isSubmitting || desafio.concluido) return;
     setIsSubmitting(true);
@@ -132,13 +123,11 @@ useEffect(() => {
 
       const novosDesafios = desafios.map(d => (d.id === desafio.id ? { ...d, concluido: true } : d));
       setDesafios(novosDesafios);
-
       setUser(prev => ({
         ...prev,
         pontos: data.pontosAtualizados,
         levelProgress: calculateProgress(novosDesafios),
       }));
-
     } catch (err) {
       console.error(err);
       Alert.alert("Erro", "Erro ao concluir desafio");
@@ -147,7 +136,6 @@ useEffect(() => {
     }
   }
 
-  // ====== UPLOAD AVATAR (continuará na Central-Conta) ======
   const changeAvatar = async () => {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!granted) {
@@ -194,6 +182,7 @@ useEffect(() => {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        {/* ====== HEADER ====== */}
         <LinearGradient
           colors={GRADIENT_COLORS}
           start={{ x: 0, y: 0 }}
@@ -244,25 +233,24 @@ useEffect(() => {
           </View>
         </View>
 
+        {/* ====== BOTÕES DE ACESSO RÁPIDO ====== */}
+        <View style={styles.quickAccessContainer}>
+          <TouchableOpacity
+            style={styles.quickButton}
+            onPress={() => router.push("/desafios")}
+          >
+            <Text style={styles.quickButtonText}>Ver Desafios</Text>
+          </TouchableOpacity>
 
-{/* ====== BOTÕES DE DESAFIOS E QUIZZES ====== */}
-<View style={styles.quickAccessContainer}>
-  <TouchableOpacity
-    style={styles.quickButton}
-    onPress={() => router.push("/desafios")}
-  >
-    <Text style={styles.quickButtonText}>Ver Desafios</Text>
-  </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickButton}
+            onPress={() => router.push("/quizzes")}
+          >
+            <Text style={styles.quickButtonText}>Ver Quizzes</Text>
+          </TouchableOpacity>
+        </View>
 
-  <TouchableOpacity
-    style={styles.quickButton}
-    onPress={() => router.push("/quizzes")}
-  >
-    <Text style={styles.quickButtonText}>Ver Quizzes</Text>
-  </TouchableOpacity>
-</View>
-
-
+        {/* ====== GRÁFICO ====== */}
         <Text style={styles.sectionTitle}>Status dos Desafios</Text>
         <BarChart
           data={barChartData}
@@ -279,7 +267,6 @@ useEffect(() => {
           style={{ marginVertical: 10, borderRadius: 10 }}
           fromZero
         />
-
 
         {/* ====== LISTA DE DESAFIOS ====== */}
         {desafios.map(d => (
@@ -323,13 +310,14 @@ useEffect(() => {
 
       </ScrollView>
 
+      {/* ====== MENUS ====== */}
       {sideMenuVisible && <SideMenu router={router} onClose={() => setSideMenuVisible(false)} />}
       {profileMenuVisible && <ProfileMenu router={router} onClose={() => setProfileMenuVisible(false)} />}
     </View>
   );
 }
 
-// ================= MENU =================
+// ================= MENU COMPONENTS =================
 const MenuItem = ({ icon, label, subtitle, onPress, color }) => (
   <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", marginBottom: 15 }} onPress={onPress}>
     <MaterialCommunityIcons name={icon} size={20} color={color || "#000"} />
@@ -407,31 +395,7 @@ const styles = StyleSheet.create({
   closeButton: { alignSelf: "flex-end", padding: 5 },
   closeText: { fontSize: 16, fontWeight: "bold" },
   menuTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15 },
-  quickAccessContainer: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginVertical: 20,
-},
-
-quickButton: {
-  flex: 1,
-  backgroundColor: "#4CAF50",
-  paddingVertical: 15,
-  marginHorizontal: 5,
-  borderRadius: 14,
-  alignItems: "center",
-  justifyContent: "center",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.25,
-  shadowRadius: 4.65,
-  elevation: 6,
-},
-
-quickButtonText: {
-  color: "#fff",
-  fontWeight: "bold",
-  fontSize: 16,
-},
-
+  quickAccessContainer: { flexDirection: "row", justifyContent: "space-between", marginVertical: 20 },
+  quickButton: { flex: 1, backgroundColor: "#4CAF50", paddingVertical: 15, marginHorizontal: 5, borderRadius: 14, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 4.65, elevation: 6 },
+  quickButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });

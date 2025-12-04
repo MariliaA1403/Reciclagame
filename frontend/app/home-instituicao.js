@@ -1,7 +1,7 @@
 // app/HomeInstituicao.js
 import React, { useState, useEffect } from "react";
 import { 
-  View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Dimensions, TextInput, Image, Alert, Platform 
+  View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Dimensions, TextInput, Image 
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart, PieChart } from "react-native-chart-kit";
@@ -48,7 +48,6 @@ export default function HomeInstituicao() {
       const data = await res.json();
       if (!data.success) return;
 
-      // Para cada jogador, buscar pontos totais (desafios + quizzes)
       const jogadoresComPontos = await Promise.all(
         data.jogadores.map(async (j) => {
           try {
@@ -107,34 +106,6 @@ export default function HomeInstituicao() {
     { name: "Quizzes", population: totalQuizzes, color: "#ff9800", legendFontColor: "#333", legendFontSize: 14 }
   ];
 
-  // ======= Upload de foto =======
-  const handleUploadFoto = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("foto", file);
-
-    try {
-      const res = await fetch(`${API_URL}/api/instituicoes/${instituicao.id}/foto`, {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      if (data.success) {
-        const updatedInstituicao = { ...instituicao, logo_url: data.logo_url };
-        setInstituicao(updatedInstituicao);
-        await AsyncStorage.setItem("user", JSON.stringify(updatedInstituicao));
-        Alert.alert("Sucesso", "Foto atualizada!");
-      } else {
-        Alert.alert("Erro", "Não foi possível atualizar a foto.");
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Erro", "Erro ao enviar arquivo.");
-    }
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -159,9 +130,6 @@ export default function HomeInstituicao() {
             <Ionicons name="chatbubble-ellipses-outline" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
-
-        {/* Upload de foto */}
-        <input type="file" accept="image/*" onChange={handleUploadFoto} style={{ marginVertical: 10 }} />
 
         {/* Dashboard */}
         <View style={styles.dashboardContainer}>
@@ -323,11 +291,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10
   },
-  avaliarButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16
-  },
+  avaliarButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 10, marginLeft: 15 },
   jogadorCard: { backgroundColor: "#fff", padding: 12, borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: "#ddd", marginHorizontal: 15 },
   jogadorNome: { fontWeight: "bold", fontSize: 16, marginBottom: 3 },

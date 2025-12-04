@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.marilia1403.frontend",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -46,13 +50,17 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "ff733be3-4126-43ad-9c56-a46a3f2fb1f5"
+      }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/76db2e48-1619-4315-a206-3d59273d3b72"
-    }
+      "url": "https://u.expo.dev/ff733be3-4126-43ad-9c56-a46a3f2fb1f5"
+    },
+    "owner": "marilia1403"
   }
 }

@@ -3,26 +3,21 @@ import {
   View,
   Text,
   TextInput,
-  Image,
-  Alert,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native"; // para navegação
-
-const API_URL = "https://backend-reciclagame.vercel.app";
+import { useNavigation } from "@react-navigation/native";
 
 export default function CentralConta() {
-  const navigation = useNavigation(); // hook de navegação
+  const navigation = useNavigation();
   const [user, setUser] = useState(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [endereco, setEndereco] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
-  const [avatar, setAvatar] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
@@ -41,8 +36,6 @@ export default function CentralConta() {
         const formatted = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
         setDataNascimento(formatted);
       }
-
-      setAvatar(parsed.avatar_url ? `https://backend-reciclagame.vercel.app${parsed.avatar_url}` : null);
     }
     loadUser();
   }, []);
@@ -50,7 +43,7 @@ export default function CentralConta() {
   const updateUser = async () => {
     try {
       const payload = { nome, email, telefone, endereco };
-      const res = await fetch(`${API_URL}/jogadores/${user.id}`, {
+      const res = await fetch(`https://backend-reciclagame.vercel.app/jogadores/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -70,33 +63,6 @@ export default function CentralConta() {
     }
   };
 
-  const removeAvatar = async () => {
-    Alert.alert("Remover Foto", "Deseja remover a foto do perfil?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Remover",
-        onPress: async () => {
-          try {
-            const res = await fetch(`${API_URL}/upload-avatar/${user.id}`, { method: "DELETE" });
-            const data = await res.json();
-            if (data.success) {
-              setAvatar(null);
-              const updatedUser = { ...user, avatar_url: null };
-              setUser(updatedUser);
-              await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-            } else {
-              Alert.alert("Erro", data.message || "Não foi possível remover o avatar.");
-            }
-          } catch (err) {
-            console.error(err);
-            Alert.alert("Erro", "Erro ao remover avatar.");
-          }
-        },
-        style: "destructive",
-      },
-    ]);
-  };
-
   if (!user) return <Text>Carregando...</Text>;
 
   return (
@@ -109,57 +75,10 @@ export default function CentralConta() {
         <Text style={styles.headerTitle}>Minha Conta</Text>
       </View>
 
+      {/* Avatar com inicial do nome */}
       <View style={styles.avatarContainer}>
-        {avatar ? (
-          <Image source={{ uri: avatar }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={{ color: "#fff", fontSize: 32 }}>+</Text>
-          </View>
-        )}
-
-        <View style={styles.fileContainer}>
-          <input type="file" accept="image/*" onChange={async e => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const formData = new FormData();
-            formData.append("avatar", file);
-            try {
-              const res = await fetch(`${API_URL}/upload-avatar/${user.id}`, {
-                method: "POST",
-                body: formData,
-              });
-              const data = await res.json();
-              if (data.success) {
-                setAvatar(`https://backend-reciclagame.vercel.app${data.avatar_url}`);
-                const updatedUser = { ...user, avatar_url: data.avatar_url };
-                setUser(updatedUser);
-                await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-              } else {
-                Alert.alert("Erro", data.message || "Erro ao atualizar avatar.");
-              }
-            } catch (err) {
-              console.error(err);
-              Alert.alert("Erro", "Erro ao enviar avatar.");
-            }
-          }} />
-
-          {avatar && (
-            <button
-              onClick={removeAvatar}
-              style={{
-                marginLeft: 10,
-                padding: 6,
-                backgroundColor: "#f44336",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                cursor: "pointer",
-              }}
-            >
-              Remover
-            </button>
-          )}
+        <View style={styles.avatarPlaceholder}>
+          <Text style={styles.avatarText}>{nome[0]?.toUpperCase() || "?"}</Text>
         </View>
       </View>
 
@@ -190,7 +109,6 @@ export default function CentralConta() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: "#f9f9f9" },
-  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20, color: "#333" },
   label: { fontWeight: "bold", marginBottom: 5, color: "#555" },
   input: {
     borderWidth: 1,
@@ -202,26 +120,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   avatarContainer: { alignItems: "center", marginBottom: 25 },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 2,
-    borderColor: "#4CAF50",
-  },
   avatarPlaceholder: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#bbb",
+    backgroundColor: "#4CAF50",
     alignItems: "center",
     justifyContent: "center",
   },
-  fileContainer: {
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  avatarText: { color: "#fff", fontSize: 48, fontWeight: "bold" },
   editButton: {
     backgroundColor: "#4CAF50",
     padding: 15,

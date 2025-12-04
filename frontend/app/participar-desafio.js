@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TextInput,
-  Image,
   Alert,
   StyleSheet,
   TouchableOpacity,
@@ -25,7 +24,6 @@ export default function ParticiparDesafio() {
 
   const [user, setUser] = useState(null);
   const [descricao, setDescricao] = useState("");
-  const [fotos, setFotos] = useState([]);
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
 
@@ -63,41 +61,32 @@ export default function ParticiparDesafio() {
     }, [])
   );
 
-  // ======== ESCOLHER FOTOS =========
-  const handleEscolherFotos = (e) => {
-    const files = Array.from(e.target.files);
-    const newFotos = files.map(file => ({
-      uri: URL.createObjectURL(file),
-      file,
-    }));
-    setFotos(prev => [...prev, ...newFotos]);
-  };
-
-  const removePhoto = index => setFotos(prev => prev.filter((_, i) => i !== index));
-
-  // ======== ENVIAR PARTICIPAÇÃO =========
+  // ============================
+  // ENVIAR PARTICIPAÇÃO
+  // ============================
   const enviarParticipacao = async () => {
-    if (!descricao && fotos.length === 0) {
-      Alert.alert("Aviso", "Envie foto ou escreva um texto.");
+    if (!descricao) {
+      Alert.alert("Aviso", "Escreva uma descrição para sua participação.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("jogador_id", user.id);
-    formData.append("desafio_id", id);
-    formData.append("descricao", descricao);
-
-    fotos.forEach((foto) => {
-      formData.append("fotos", foto.file);
-    });
-
     try {
-      const res = await fetch(`${API_URL}/envios/desafios/participar`, { method: "POST", body: formData });
+      const payload = {
+        jogador_id: user.id,
+        desafio_id: id,
+        descricao,
+      };
+
+      const res = await fetch(`${API_URL}/envios/desafios/participar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
       const data = await res.json();
       if (data.success) {
         Alert.alert("Sucesso", "Participação enviada!");
         setDescricao("");
-        setFotos([]);
       } else {
         Alert.alert("Erro", data.message || "Não foi possível enviar.");
       }
@@ -149,8 +138,8 @@ export default function ParticiparDesafio() {
   );
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* ======== CABEÇALHO COM PONTOS ATUALIZADOS ======== */}
+    <View style={{ flex: 1, backgroundColor: "#f6f9fc" }}>
+      {/* ======== CABEÇALHO INTEGRADO ======== */}
       <LinearGradient
         colors={['#C9DFC9', '#95C296']}
         start={{ x: 0, y: 0 }}
@@ -158,11 +147,7 @@ export default function ParticiparDesafio() {
         style={styles.header}
       >
         <TouchableOpacity onPress={() => setProfileMenuVisible(true)}>
-          {user.avatar_url ? (
-            <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-          ) : (
-            <MaterialCommunityIcons name="account-circle" size={60} color="#fff" />
-          )}
+          <MaterialCommunityIcons name="account-circle" size={60} color="#fff" />
         </TouchableOpacity>
 
         <View style={{ marginLeft: 12, flex: 1 }}>
@@ -175,11 +160,11 @@ export default function ParticiparDesafio() {
         </TouchableOpacity>
       </LinearGradient>
 
-      {sideMenuVisible && <SideMenu router={router} onClose={() => setSideMenuVisible(false)} />}
-      {profileMenuVisible && <ProfileMenu router={router} onClose={() => setProfileMenuVisible(false)} />}
-
       {/* ======== CONTEÚDO ======== */}
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        style={{ marginTop: -40 }} // "gruda" o conteúdo no header
+      >
         <Text style={styles.title}>Participar do Desafio</Text>
 
         <Text style={styles.label}>Descrição</Text>
@@ -192,45 +177,26 @@ export default function ParticiparDesafio() {
           placeholderTextColor="#999"
         />
 
-        <Text style={styles.label}>Fotos</Text>
-
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleEscolherFotos}
-          style={{ marginTop: 10, marginBottom: 15 }}
-        />
-
-        {fotos.length > 0 && (
-          <ScrollView horizontal style={{ marginTop: 15 }}>
-            {fotos.map((foto, idx) => (
-              <View key={idx} style={styles.photoWrapper}>
-                <Image source={{ uri: foto.uri }} style={styles.photo} />
-                <TouchableOpacity onPress={() => removePhoto(idx)} style={styles.removePhotoButton}>
-                  <Text style={styles.removePhotoText}>X</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
         <TouchableOpacity style={styles.button} onPress={enviarParticipacao}>
           <Text style={styles.buttonText}>Enviar Participação</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {sideMenuVisible && <SideMenu router={router} onClose={() => setSideMenuVisible(false)} />}
+      {profileMenuVisible && <ProfileMenu router={router} onClose={() => setProfileMenuVisible(false)} />}
     </View>
   );
 }
 
 // =================== ESTILOS ===================
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 20, backgroundColor: "#f6f9fc" },
+  container: { flexGrow: 1, padding: 20, paddingTop: 60, backgroundColor: "#f6f9fc" },
   header: {
     height: 140,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     paddingHorizontal: 22,
+    paddingTop: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -240,17 +206,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
     width: "100%",
+    zIndex: 1,
   },
-  avatar: { width: 60, height: 60, borderRadius: 30 },
   username: { fontSize: 20, color: "#fff", fontWeight: "bold" },
   pointsText: { color: "#fff", marginTop: 4 },
   title: { fontSize: 28, fontWeight: "bold", marginBottom: 25, textAlign: "center", color: "#2e7d32" },
   label: { marginTop: 20, fontWeight: "600", fontSize: 16, color: "#333" },
   textArea: { borderWidth: 1, borderColor: "#cfcfcf", borderRadius: 12, padding: 15, marginTop: 8, height: 140, textAlignVertical: "top", backgroundColor: "#fff" },
-  photoWrapper: { marginRight: 12, position: "relative" },
-  photo: { width: 130, height: 130, borderRadius: 12 },
-  removePhotoButton: { position: "absolute", top: -8, right: -8, backgroundColor: "#ff5252", borderRadius: 16, width: 28, height: 28, alignItems: "center", justifyContent: "center" },
-  removePhotoText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
   button: { backgroundColor: "#4CAF50", paddingVertical: 16, marginTop: 35, borderRadius: 14, alignItems: "center" },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 17 },
   menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
